@@ -12,35 +12,27 @@ if __name__ == "__main__":
 
     # RANSAC
     # Please formulate the palnace function as:  A*x+B*y+C*z+D=0
-
-    '''
-    (1-w^n)^k < 1-p 
-    ⇒ k > log(1-p)/log(1-w^n) 
-    
-    w = 1 - (outliers / total points) ~ 1 - 24 / 130 = 0.815385 (can be seen from the plot)
-    n = 3 (number of points needed to fit a plane)
-    p = 0.999 (probability of at least one hypothesis does not contain any outliers)
-    ⇒ k > log(1-0.999)/log(1-0.815385^3) = 8.84
-    '''
-    expected_outliers = 19  # the number of outliers in the data
+    expected_outliers = 27  # the number of outliers in the data
     w = 1-expected_outliers/noise_points.shape[0]  # the probability that a point is an inlier
     n = 3  # number of points needed to fit a plane
     p = 0.999  # the probability of at least one hypothesis does not contain any outliers
     k = int(np.ceil(np.log(1-p)/np.log(1-w**n)))
     sample_time = k  # the minimal time that can guarantee the probability of at least one hypothesis does not contain any outliers is larger than 99.9%
     print("sample_time: ", sample_time)
-    distance_threshold = 0.8
+    distance_threshold = 0.05
 
     # sample points group
-    hypothesises_idx = np.random.choice(np.arange(noise_points.shape[0]), sample_time*3, replace=False)
+    hypothesises_idx = np.random.choice(noise_points.shape[0], size=(sample_time, 3), replace=False)  # shape: (sample_time, 130)
     hypothesises = noise_points[hypothesises_idx].reshape(sample_time, 3, 3)  # shape: (sample_time, 3, 3)
 
     # estimate the plane with sampled points group
-    Us, Ss, Vts = np.linalg.svd(hypothesises)  # The smallest singular value corresponds to the direction of the smallest extension of the data
-    normal_vectors = Vts[:, -1, :]  # shape: (sample_time, 3)
+    vector1 = hypothesises[:, 1, :] - hypothesises[:, 0, :]  # shape: (sample_time, 3)
+    vector2 = hypothesises[:, 2, :] - hypothesises[:, 0, :]  # shape: (sample_time, 3)
+    normal_vectors = np.cross(vector1, vector2)  # shape: (sample_time, 3, 3)
     Ds = -np.sum(normal_vectors * hypothesises[:, 0, :], axis=1)  # shape: (sample_time,)
     A_B_C_Ds = np.concatenate((normal_vectors, Ds.reshape(-1, 1)), axis=1)  # shape: (sample_time, 4)
 
+    # A_B_C_Ds[0] = np.array([0.2522, -0.7429, -0.1434, 0.6033])
     # evaluate inliers (with point-to-plance distance < distance_threshold)
     distance_all = np.abs(np.sum(A_B_C_Ds[:, None, :3] * noise_points, axis=2) + A_B_C_Ds[:, 3, None]) / \
         np.linalg.norm(A_B_C_Ds[:, :3], axis=1)[:, None]  # shape: (sample_time, 130)
