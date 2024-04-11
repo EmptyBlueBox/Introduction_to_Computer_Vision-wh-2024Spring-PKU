@@ -1,5 +1,7 @@
 **/.DS_Store
 slides/*.pdf
+cifar-10-batches-py
+experiments
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
