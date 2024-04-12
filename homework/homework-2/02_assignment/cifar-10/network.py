@@ -41,7 +41,6 @@ class ConvNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
-        # 调整全连接层的输入大小
         self.classifier = nn.Sequential(
             nn.Dropout(),
             nn.Linear(512, 4096),
@@ -54,7 +53,7 @@ class ConvNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = x.view(x.size(0), -1)  # 展平特征图
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
