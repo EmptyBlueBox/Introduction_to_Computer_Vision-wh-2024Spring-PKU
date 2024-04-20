@@ -1,5 +1,5 @@
 **/.DS_Store
-slides/*.pdf
+# slides/*.pdf
 cifar-10-batches-py
 experiments
 
