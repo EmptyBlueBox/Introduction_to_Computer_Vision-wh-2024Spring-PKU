@@ -1,7 +1,21 @@
 **/.DS_Store
-# slides/*.pdf
+slides/*.pdf
 cifar-10-batches-py
 experiments
+*.aux
+*.log
+*.bbl
+*.blg
+*.dbj
+*.dvi
+*.glo
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.ps
+*.toc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

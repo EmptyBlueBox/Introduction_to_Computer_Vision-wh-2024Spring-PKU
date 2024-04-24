@@ -1,0 +1,40 @@
+\section{Classification}
+
+图片分类是CV领域的核心问题.简单来说,就是给定一张图片,判断其属于何种分类,比如是不是猫或狗等等,这对图片的语义理解非常重要.
+
+但是传统的方法对此类问题难以下手,因为图片通常是由数字的矩阵来描述,而从数字到语义有很大的鸿沟,很难设计某个规则来判定是否属于某类.比如:对象不同的姿势,不同的摄像机视角,不同的背景信息,不同的光照条件,以及对象被隐藏和类内差异等问题.
+
+对于一个好的图片分类器,应该对上述无关因素不敏感,而这也是data augmentation的意义.比如rotation代表姿势和视角的改变,颜色改变代表光照的变化等.
+
+对于图片分类,我们有下列方法:无参方法有最近邻法,参数方法则可以采用CNN.
+\subsection{Nearest Neighbour Classifier}
+所谓最近邻,就是将图片视为高维空间的点,将每个训练数据作为已知点,定义一种图片间距离的度量,选取最近的一个(或几个)训练数据的类别作为待判断图片的类别.这是一种非常低效的方法,其完美避开了我们上面说到的应具有的标准,对光照/背景/视角/姿势极为敏感,正确率极低,而且需要存储所有训练集.因此,实际中从不使用此种方法.但是最近邻方法在度量学习当中仍有广泛应用.
+
+\subsection{Using CNN for image Classification}
+选用CNN之后,我们需要面对的问题有两个:选取何种网络结构,以及如何设计损失函数.如今分类问题的网络范式是Softmax classifier + cross-entropy loss.\footnote{对二分类问题,也可采用SVM loss.但是扩展的多分类SVM loss在如今已经极少使用了.}
+
+\subsubsection{SoftMax}
+SoftMax就是一个$\mathbb R^k \to (0, 1)^k$的映射.
+\begin{equation}
+	\sigma(z)_i = \frac{\exp{\beta z_i}}{\sum \exp(\beta z_j)}
+\end{equation}
+一般取$\beta = 1.$当$\beta \to \infty$时,SoftMax变成Argmax.
+
+关于loss的设计,如果正确标签是one-hot的,那么我们可以使用负对数概率(NLL)作为损失函数.但是如果ground truth也是一个概率分布(有时这是人为的),那么我们就需要对两个概率分布的距离度量给出定义.在信息论领域常用的度量是KL divergence $D(P \parallel Q)$,其定义如下:
+
+\begin{equation}
+	D(P \parallel Q) = \sum_{x \in \mathcal X} P(x) \log \frac{P(x)}{Q(x)}.
+\end{equation}
+
+这个度量并不满足距离的定义,因为其满足正定性,而不满足对称性和三角不等式.
+
+我们不难看出
+\begin{equation}
+	D(P \parallel Q) = \underbrace{-\sum_{x \in \mathcal X} P(x)\log Q(x)}_{H(P, Q)} - \underbrace{\xk{-\sum_{x \in \mathcal X} P(x) \log P(x)}}_{H(P)}.
+\end{equation}
+即KL divergence是相对熵和分布$P$的熵之差.如果$P$是groud truth的分布,那么第二项成为常数,就得到了我们的交叉熵损失函数:
+\begin{equation}
+	\mathcal L_{CE} = H(P, Q) = -\sum_{x \in \mathcal X} P(x) \log Q(x).
+\end{equation}
+
+交叉熵函数在随机初始化时,取值约为$\log (\text{sum of classes})$.它没有上界,有下界$0$.

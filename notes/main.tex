@@ -1,0 +1,892 @@
+\include{package}
+
+\title{计算机视觉导论2022S笔记}
+\author{主讲教师:王鹤\ \ \ \ 整理:林晓疏}
+\date{\today}
+\bibliographystyle{plain}
+%\includeonly{}
+
+\begin{document}
+	\maketitle
+	\include{preface}
+	\clearpage
+	\tableofcontents
+	\include{CNN}
+	\include{CNN-Training}
+	\include{improveCNN}
+	\include{classification}
+	\include{CNNforClassifigation}
+	\include{Segmentation}
+	\include{3Dvision}
+	\include{camera-carlibration}
+	\include{single-view-geometry}
+	\include{EpipolarGeometry}
+	
+	
+	% appendix: appendix-QRDecomposition, condition-number, transformation-in-space
+	
+	
+	\clearpage
+	\section{3D data}
+	from sensor or graphics.
+	
+	第三种sensor:time-of-light.即用光的传播时间计算深度.两种:iToF and dToF.direct or indirect.前者使用脉冲波,后者计算光的相位差.
+	
+	dToF精度高,但对器件要求高,需要使用SPAD(单光子雪崩二极管),无法做得很密集,造价高.iToF精度低(误差与距离成正比),但造价更低.
+	
+	multiple 3D representation:
+	
+	multiview images.从各个视角获得的多张图片.它包含3D信息,indirect,not a true 3D representation.
+	
+	depth image.只知道深度,不知道相机内参,无法确定两个点的距离.因此被称为2.5D.
+	
+	Voxels.物体占据了位置则设为1.能被index.但是非常昂贵.$O(n^3)$.没有表面的表示.一旦分辨率低,则无法还原丢失的信息.
+	
+	Irregular 3D representation. Mesh,point Cloud, Implicit representation.
+	
+	\subsection{Mesh}
+	在表面取点,用过三点的平面近似表面.实际上也不限于三角形.下面我们讨论triangle mesh.
+	
+	\begin{equation}
+		\begin{aligned}
+			V &= \{v_1, \cdots, v_n\} \in \mathbb R^3
+			\\
+			E &= \{e_1, \cdots, e_n\} \in V\times V
+            \\
+            F &= \{f_1, \cdots, f_n\} \in V\times V \times V
+		\end{aligned}
+	\end{equation}
+	
+	
+	好的mesh:watertight(不漏), manifold(外法向量连续).
+	
+	\subsection{Point Cloud}
+	
+	Point cloud是一个$3n$级别的存储方式,当然也可以添加其他分量.它是不规则(irregular)且无序的数据.换言之,其数据的序并不是必要的,不能提供额外信息,如同set一样.好的算法应该尽可能不去运用序.它是非常轻量级,紧致的,线性级别的存储空间.容易存储,容易理解和生成,容易在其上构建算法.
+	
+	当然它也不是完美的,比如并不容易通过它判断表面的位置.点云实际上是在表面上采样,那么怎样从一个mesh surface上取样呢?
+	
+	\textbf{Sampling Strategy:Uniform Sampling.}
+	计算每个表面的面积,以面积为权独立同分布地选取三角形.在三角形里如何均匀选取呢?仿射变换形成直角三角形,再拼接成矩形.\footnote{笔者内心OS:直接拼接成平行四边形如何?}
+	
+	但是这样取样之后,在取样量不算非常大的时候,经常会出现不太均匀的情形.此时我们可以采用Farthest Point Sampling(FPS).目标是选取$N$个点使其两两距离求和最大.但这是一个$\mathcal{NP}$hard的问题.我们采取一个近似的贪心算法.我们先均匀选取10000个点.在这10000个点最远的1024个点成为组合优化问题.但仍然比较困难.我们先确定一个点,最后依次选取最远的点.我们也只是希望点云看起来比较均匀,因此没必要一定取得数学上的最优解.
+	
+	除此之外,点云的距离度量也成为一个问题,这也是无序带来的问题之一.我们希望找到一个permutation invariant的度量:Chamfer distance.\footnote{在某些文献当中,式 \ref{eq:chamfer distance}有时也会带平方.但是如果带平方,则三角不等式不成立.}
+	\begin{equation}
+		d_{CD} = \sum_{x \in S_1} \min_{y \in S_2} \norm{x - y}_{2} + \sum_{y \in S_2} \min_{x \in S_1} \norm{x - y}_{2}
+		\label{eq:chamfer distance}
+	\end{equation}
+	
+	对于每个单项,称为uni chamfer distance.在一个点云是另一个子集的时候有用.
+	
+	另一个度量是Earth Mover's distance.与CD不同的是,它要求两个点云数量相同,且每个点必须找到互不重复的对应.\footnote{Earthmover,中文直译为推土机.EMD距离用于衡量(在某一特征空间下)两个多维分布之间的dissimilarity,它的计算基于著名的运输问题.但是精确求解EMD亦非易事,调用的package也多为近似算法.}
+	\begin{equation}
+		d_{E M D}\left(S_{1}, S_{2}\right)=\min _{\phi: S_{1} \rightarrow S_{2}} \sum_{x \in S_{1}} \norm{x-\phi(x)}_{2}
+	\end{equation}
+
+	CD对于取样情况不太敏感,而EMD则比较敏感.比如同样对于Stanford bunny,如果一个点云多集中在头部,另一个比较均匀,则CD变化不大而EMD变换显著.由于点云是surface+sampling,因此如果对于取样有要求,应该使用EMD.
+	
+	\subsection{Implicit Shape}
+	另一种表示3D数据的方法是隐式表达,即SDF(signed distance function).简单地说,这个函数表示空间中点到物体表面的距离,内部为负,外部为正.其数学定义为:设$\Omega$为度量空间$X$的子集,$d$为$X$的度量,则SDF定义为
+	\begin{equation}
+		f(x)=\begin{cases}
+			-d(x, \partial \Omega) & \text { if } x \in \Omega 
+			\\
+			d(x, \partial \Omega) & \text { if } x \in \Omega^{c}
+		\end{cases}
+	\end{equation}
+	其中$d(x, \partial \Omega) \xlongequal{\text{def}} \inf_{y \in \partial \Omega} d(x, y)$.
+	
+	另外,SDF还满足Eikonel equation,即
+	\begin{equation}
+		\norm{\nabla F} = 1.
+	\end{equation}
+	这点不难理解,因为沿与距离最短的点的连线方向的方向导数之模为$1$,而函数本身即表达距离,不可能只前进一个单位的长度,距离变化超过一单位,因此这也是最大值.
+
+	implicit representation的形式非常具有潜力,因为它可以很容易地与神经网络结合.因此我们下一个主题就是--3D的Deep learning.
+	
+	\clearpage
+	\section{3D Deep Learning}
+	对于点云来说,直接拉成vector显然是不行的.因为点云本身无序.有一些直接的处理方法:转换成voxel grid(从点云到表面,再重建voxel),或者2D 投影(这属于是越活越回去了).我们想要的network需要对$N!$种不同的点云顺序具有不变性.
+	
+	一种想法:排序赋予序关系如何?
+	
+	我们用Permutation Invariant的函数:Symmetric Function.也就是
+	\begin{equation}
+		f(x_1, x_2, \cdots, x_n) \equiv f(x_{\pi_1}, x_{\pi_2}, \cdots, x_{\pi_n}), \forall x \in \mathbb R^N
+	\end{equation}
+
+	实际上,这样的函数随处可见.比如均值,极值等.文献 ~\cite{PointNet} PointNet.\footnote{王老师:"虽然我不在这个组里,但PointNet这篇论文的诞生我也是亲眼目睹过的,ICCV的投稿截止在11月,9月底大家还不知道投什么,于是有人说要不试试PointNet吧.写到最后只有两个周调参了,还是打不过voxel,于是加了T-transform.我们这里不讲,因为现在几乎没有用这个的了".(笑)}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.6]{figures/PointNet.png}
+		\caption{PointNet的结构图}
+		\label{}
+	\end{figure}
+
+	做segmentation:将每个点自身的特征(local)和global feature结合,过MLP就能进行分类.
+	
+	诸多挑战:Resolution,Occlusion,Noise,Registration.
+	
+	PointNet对于Resolution和Noise比较robust.在ModelNet40上,去掉50\%的数据,Furthest的准确率只下降了2\%.能够如此稳定的关键在于max函数,在连续取样时,一些点的丢失可以用周围的点来弥补.而且如果pointnet只有1024个feature,那么它最多也只会选取1024个点,可能去掉的点根本就没有用到.
+	
+	PointNet的不足
+	
+	一步直接maxpooling,没有local context.因此有了PointNet++.它仍是目前不追求过高性能时对point cloud处理的首选方法.即设定一定的范围,将某个点及其周围的点过MLP,再maxpooling.等同于在image里进行conv.当然,求neighbour可能比较花时间.另外,所有的neighbour都通过了同样的MLP,毕竟在点云里也无法和图像一样,区分哪个在什么方向.
+	
+	此外,pointnet++怎么进行分辨率下降呢?2d中是pooling,而pointnet则进行grouping,从前面借.
+	
+	在恢复的时候,添加的点没有feature,如何处理(2D可以进行Deconv,自然具有特征)?添加interpolate,新的点选择与它最近的三个点,按照距离反比为权插值获得特征.
+	
+	3D:voxel Net->sparse conv,屏蔽没有值的voxel,Hash有值的坐标,从NVIDIA,cuda的层次写起.
+	
+	Sparse conv: kernel 是空间各向异性(spatial anisotropic)的.因此它的acc能够达到惊人的70\%以上,而point cloud无论如何添加特性,最多也在64\%左右.而且因为可被标签,使用更加方便.但是它的分辨率受限.
+	
+	Point cloud:高分辨率,鲁棒性,但是表现略差.
+	
+	\clearpage
+	\section{Object Detection and Instance Segmentation}
+	\subsection{任务简介}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.55]{figures/cv_tasks.png}
+		\caption{分类任务}
+		\label{}
+	\end{figure}
+
+	如上的任务当中,最左侧的是分类,即一张图片里只有一个待分类的事物.随后是语义分割,即将代表不同语义的像素区分开来,每个像素都要有一个输出,它不区分不同的个体.随后是目标检测,它区分不同个体,但并不一定每个像素都被一个bounding box包围.最后在此之上可以继续进行语义的分割.
+	
+	
+	
+	我们先从Object Detection中最简单的Single Object说起.它的目标是定位和分类,网络输出是2D的bounding box,且是axis aligned的.\footnote{到了三维的时候,由于阶数的提升,axis-aligned bounding box中有非常多的部分并不属于这个物体,因此可能需要旋转.但是对2D来说,这并不成为问题.}确定bounding box需要四个参数$x, y, w, h$,即bbox左上角的坐标和大小.\footnote{如果我们用八个点的坐标作为表示,那么显然有很多冗余.尤其在高维的情形,如何找到冗余尽可能少而能够便利地表达某一对象的方法是非常重要的.在后面的旋转部分,我们还会看到这一点.}
+	
+	总的来说,单目标检测可以被划分成两个任务:(对图片的)\textbf{分类}和(对bbox)的\textbf{回归}.如下图:
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.55]{figures/single_obj_det.png}
+		\caption{单目标检测的网络概念图}
+		\label{}
+	\end{figure}
+	
+	假设我们得到了图片的特征向量,那么可以通过MLP变成分类概率的向量,然后使用交叉熵进行度量;然后我们对图片MLP到四个数值,然后用$L^2$ loss进行回归\footnote{注意$L^2$ norm和$L^2$ loss的区别.前者是模长,后者是平方和.当$L^2$ norm作为损失函数时,被称为rooted mean squared error(RMSE),而另一个则是mean squared error.L2在接近收敛的时候,梯度也小,不容易越过.但是L2在较大的时候,梯度很大,容易导致神经网络训练效果不好,而且还容易出现NaN.RMSE因为开根号的问题,在接近收敛时反而可能出现问题.soft L1:结合两者.}.
+	
+	这是一个Multitask Loss,即分类loss和bounding box的loss之和,可能产生竞争.它们应该以何种比例叠加?比如分类的loss最大大概在$\log N$的量级,但是对bounding box来说,如果采用$L^2$,差5个pixel那就是25.而$e^{25}$是一个非常大的数字.即使loss的量级差不多,gradient的量级也不一定是相同的.
+	
+	除此之外,这个网络还有一个特殊性质:对于不同图片,可能需要不同数量的输出.这在以前的Neural Network是无法做到的.传统的方法是用sliding window进行遍历检测,但这也自然而然带来一个问题:你怎么知道window多大呢?后来的传统方法采用了Region Proposal的方法,即先提出一些可能是物体的bbox,在其中进行检测.后来将这些proposal称为Region of Interest(RoI).
+	\subsection{Region-based CNN}
+	
+	第一个深度学习的相关工作\cite{RCNN}:R-CNN(Region-based CNN).它的大致流程是:先提出一些proposal,然后通过SVM进行分类,以及对bbox的回归,回归的输出是$(dx, dy, dh, dw)$,即bbox应该进行的调整.为了处理不同大小的bbox输入,RCNN将所有的bbox覆盖的部分统一变换到224*224的大小.
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.7]{figures/RCNN_classification.png}
+		\caption{RCNN分类部分}
+	\end{figure}
+	
+	训练时我们会有很多的RoI,但ground truth(后文简写成gt)的数量显然要少得多.那么如何确定一个RoI被分成哪一类,以及向哪个gt进行回归呢?首先,如果一个bbox与任何一个gt的交都小于某一阈值,那么就将它单独分类成background,此时我们不再关心其regression的情况;如果一个bbox同时包含了多个gt,那么可以计算它与这些gt的IoU,将IoU最大的那个gt作为其分类和回归的对象.这里要注意的是,我们不关注background的回归是必须采取的行为,因为如果要监督一个background的回归,那么它的loss是非常大的,会直接破坏其他RoI的训练.
+	
+	这个工作的两个问题:首先proposal可能太多了,在测试时速度太慢.其次若给出的proposal可能有缺损,将其单独提取出来之后的部分无法获知周围的信息,几乎不可能准确对bbox进行回归.
+	
+	\subsection{Fast R-CNN}
+	
+	
+	\begin{figure}[htbp]
+		\centering
+		\subfigure[取对应的bbox]{
+			\includegraphics[scale=0.45]{figures/RoI_pool.png}
+			\label{fig:get bbox in feature map}
+		}
+		\subfigure[RoI pool]{
+			\includegraphics[scale=0.45]{figures/RoI_pool2.png}
+			\label{fig:RoI_pooling}
+		}
+		\caption{Fast RCNN}
+	\end{figure}
+	
+	随后提出的Fast R-CNN解决了上面的两个问题.Fast RCNN仍然采用传统方法获得RoI,随后将整个图片过CNN,再在feature map上取出对应的bbox.图像在卷积的过程中分辨率会减小,因此在feature map上取的时候也要对应地缩小RoI,如图 \ref{fig:get bbox in feature map}所示,缩小过程中不在格点上的顶点被吸附到最近邻的格点上.
+	
+	这样取得的RoI大小仍然不统一,原论文采用了一种max pooling的方法,将形式各异的RoI分割成合乎要求的子块,对每个子块求最大值获得期望的形状,如图 \ref{fig:RoI_pooling}所示.图中为方便将最终的大小画成了2*2,实际上为7*7.
+	
+	这样做的好处是,可以将多出来的RoI数量这一维度作为Batch的一部分,从而实际上并不会明显扩大工作量,因为最后的RoI分辨率比较小.以7*7为例,1000个RoI总共约50k个数据,与224*224大小的原图相仿.另外,经过conv后,感受野也增大了,也就不会产生上文提到的被裁剪而缺少上下文的问题了.Fast RCNN相比RCNN取得了可观的速度提升.下图左侧,Fast RCNN的训练时间只有RCNN的约十分之一,且测试速度显著提高.右图红色为不包含传统方法获得RoI,仅对RoI进行处理的时间,可以看出时间的限制在RoI的提出上了.
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.65]{figures/rcnn_vs_frcnn.png}
+		\caption{RCNN v.s. Fast RCNN}
+		\label{}
+	\end{figure}
+	
+	\subsection{Faster R-CNN}
+	
+	经过R-CNN和Fast R-CNN的积淀，Ross B. Girshick在2016年提出了新的Faster RCNN.在结构上,Faster RCNN已经将特征抽取(feature extraction),proposal提取,bounding box regression,classification都整合在了一个网络中,使得综合性能有较大提高,在检测速度方面尤为明显.
+	
+	\begin{wrapfigure}{l}{4cm}
+		\includegraphics[scale=0.5]{figures/anchor.jpg}
+		\caption{不同形状的anchor}
+		\label{fig:anchor}
+	\end{wrapfigure}
+	
+	Faster R-CNN引入Anchor box的概念.在Fast R-CNN中,我们已经得到了feature map,而其中的每个pixel都可能含有不同形状的一个或多个物体,直接将取每个pixel作为RoI是不合理的.Faster R-CNN让每个pixel都给出一些不同形状的anchor(如图 \ref{fig:anchor}所示).这个部分被称为Region Proposal Network(RPN).
+	
+	当然,这样会获得数千个乃至更多的bbox,而一张图片里一般并没有这么多,而这里我们并没有gt可供参考,因此我们还要进行NMS.具体来说,先将这些bbox进行分类预测,按照它们的分类进行分组,随后对每个类型的分组内取分类概率最高的RoI,将同组之内和它IoU大于某个threshold的RoI全部去除.这样做的原理是将某一类别概率最高的作为标准,与其IoU较大的则认为是圈出了同一个物体,全部去除;对于剩余的RoI重复这一操作.\footnote{举例来说,假设猫分类的RoI中概率最大者圈住了一只猫的绝大多数,因而以90\%的confidence认为是猫,则其他与它IoU大于0.5的RoI很可能只圈住了这只猫的半边身子,所以把它们都去掉.而IoU较小的可能是其他的猫.当然,这样做也存在一些问题,比如有一个和它非常接近的RoI因为某种原因识别为狗,那么这样做就不能去除这样的RoI,因为此处NMS只对同类的RoI进行操作.后来也有工作同时预测RoI与IoU(即"预测的预测"),并证明这样做效果更优.}
+	
+	\begin{wrapfigure}{r}{6cm}
+		\includegraphics[scale=0.4]{figures/rcnn_speed_comparison.png}
+		\caption{几种网络的速度比较}
+		\label{fig:rcnn_speed}
+	\end{wrapfigure}
+	
+	当然,Faster R-CNN之中还有非常多的细节,比如anchor如何取定,如何确定训练RPN的positive/negative samples,如何参数化bbox回归的过程等,限于篇幅限制无法一一展开,读者可参考\cite{FasterRCNNzh=cn}.
+
+	Faster R-CNN中包含了四种loss:RPN对是否是物体的二分loss,RPN regress box loss, final classification score, final box coordinates, 调参的过程自然是非常复杂的,但是网络的效果也是显而易见的(如图 \ref{fig:rcnn_speed}).Faster R-CNN的出现,使得目标检测不再是学术界的toy model, 而是真正进入了实用领域,促进了安保等行业的发展.
+	
+	\subsection{two-stage detector and one-stage detector}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.45]{figures/two_stage_detector.png}
+		\caption{Two Stage示意}
+		\label{}
+	\end{figure}
+	
+	如上图,Faster R-CNN是一个分两步的目标检测网络.有人提出:既然在第一步里也做了bbox 的refine,那么能否去掉第二步呢?这就诞生了single-stage detectors,代表有YOLO系列,它的特点就是非常快,目前能达到120 fps.总体来说,two stage准确率占优,而one stage速度更快.
+	
+	\subsection{Evaluation Metric: mAP}
+	
+	无论是一步还是两步,都需要面临的问题:我们如何评估预测结果?\marginpar{\kaishu 这是边注.这段话测试一下边注的分段和位置.
+		
+	庾信平生最萧瑟,暮年诗赋动江关.$$a = b$$}假如我们有一张图,有20个ground truth bounding box,我们显然不可能要求其完全相符.我们可以定义一个IoU threshold.首先其输出的类别要对,其次IoU>threshold.另外一方面,如果我乱猜了5000张,显然也是不行的.trade-off between recall \& precision.因此提出度量:AP.即Average Precision.即precision-recall图像下的面积.它先选出某个种类,然后按照prob排序,逐个增加.这样precision下降,recall提升.mAP就是所有不同category and/or IoU threshold.
+	
+	Object detection变量非常多.若要准确度,则Faster R-CNN.若要快速:YOLO.但目前这一领域,工业界已经占据了统治地位.
+	
+	
+	\clearpage
+	\section{Instance Segmentation}
+	
+	\subsection{Mask R-CNN}
+	在目标检测上再进一步,输出哪个pixel属于哪个segmentation.
+	
+	两种方法:bottom-up, top-down.目前在2D中前者较好,因为bbox已经做得很好.后者在3D中有用.
+	
+	Top-Down Approach:Mask R-CNN\footnote{何恺明是如何让这个看起来大家都看不起的工作拿到了ICCV 2017 best paper呢?}
+	
+	首先,经过RoI pooling之后,分辨率可能下降.但这是大家都知道的.
+	
+	最重要的在于,何恺明指出,我们不能进行最近邻的吸附,否则会不匹配,这是不可能被学习到的.因此何恺明使用双线性插值进行处理,RoI align.
+	
+	Ablation Study on RoI Align.AP at 75 提升比AP50还高,这是因为这样的方法对于高精度影响更大.此外,加入align后,bounding box的表现也提升了.额外的信息量.synergy.(what is mask?)
+	
+	\subsection{3D Object Detection and Instance Segmentaiton}
+	3D object detection部分过于复杂,只做了解,不再详细记录.
+	
+	\clearpage
+	\section{Pose and Motion}
+	\subsection{Beyond Detection: Pose}
+	Pose是物体刚性运动的表征.二维bbox拥有四个自由度.三维有六个.若有转动角$\theta$,则为七个.
+	
+	rotation包含物体的朝向信息.定义六维物体姿态(6d object pose)为3平动(translation),3转动(rotation).
+	
+	旋转矩阵$\bd R$满足$\bd R^\top\bd R = 1$且$\det \bd R = 1$.它属于群$\mathrm{SO(3)}$\footnote{SO的含义是Special Orthogonal,前者代表行列式为1.}.
+	
+	旋转矩阵只有三个自由度,但却包含九个元素,这使得神经网络难以预测.我们需要其他的表达方式.
+	
+	\subsection{Euler Angle}
+	\begin{equation}
+		\begin{array}{l}
+			R_{x}(\alpha):=\left[\begin{array}{ccc}
+				1 & 0 & 0 \\
+				0 & \cos \alpha & -\sin \alpha \\
+				0 & \sin \alpha & \cos \alpha
+			\end{array}\right] \quad
+			R_{y}(\beta):=\left[\begin{array}{ccc}
+				\cos \beta & 0 & \sin \beta \\
+				0 & 1 & 0 \\
+				-\sin \beta & 0 & \cos \beta
+			\end{array}\right] \quad
+			R_{z}(\gamma):=\left[\begin{array}{ccc}
+				\cos \gamma & -\sin \gamma & 0 \\
+				\sin \gamma & \cos \gamma & 0 \\
+				0 & 0 & 1
+			\end{array}\right]
+		\end{array}
+	\end{equation}
+
+	当然,具体使用的时候,有不同的convention:比如,按照什么顺序依次旋转轴?旋转是使用变换前的轴,还是变换后的轴?
+	
+	但两个操作复合时,并不能简单将两个角相加.
+	
+	\subsection{Axis Angle}
+	寻找瞬时转轴和角度,$\bm e, \theta$.得到$\bm \theta = \theta \bm e$,三个变量可以取任意值.
+	
+	应用Rodrigues’ rotation formula, 可以将axis-angle转变为rotation matrix:
+	\begin{equation}
+		R=\bd I+(\sin \theta) \bd{K}+(1-\cos \theta) \bd{K}^{2}
+	\end{equation}
+	其中$\bd K = \zk{\bm e}_{\times}$.
+	
+	Axis Angle非常好地表示了旋转的特征,且其$\theta$是不随坐标系选取而变化的.但是它仍然存在问题:当我们获知两个AA的$\theta, \bd K$时,其复合也不能由它们简单运算得到.$\mathrm{SO(3)}$在李群,李代数当中有很漂亮的形式,以及与AA的联系.
+	
+	\subsection{Quaternion}
+	Quaternion即四元数,表达形式是由一个实部和三个虚部组成:
+	\begin{equation}
+		q = w + x \bm i + y \bm j + z \bm k.
+	\end{equation}
+	其中
+	\begin{equation}
+		\begin{array}{c}
+			\mathbf{i} * \mathbf{i}=-1 \\
+			\mathbf{j} * \mathbf{j}=-1 \\
+			\mathbf{k} * \mathbf{k}=-1 \\
+			\mathbf{i} * \mathbf{j}=-\mathbf{j} * \mathbf{i}=\mathbf{k} \\
+			\mathbf{j} * \mathbf{k}=-\mathbf{k} * \mathbf{j}=\mathbf{i} \\
+			\mathbf{k} * \mathbf{i}=-\mathbf{i} * \mathbf{k}=\mathbf{j}
+		\end{array}
+	\end{equation}
+
+	运算律:
+	\begin{equation}
+		\begin{aligned}
+			\mathbf{q}_{1} * \mathbf{q}_{2} &=\left(w_{1} w_{2}-x_{1} x_{2}-y_{1} y_{2}-z_{1} z_{2}\right) \\
+			&+\left(w_{1} x_{2}+x_{1} w_{2}+y_{1} z_{2}-z_{1} y_{2}\right) \mathbf{i} \\
+			&+\left(w_{1} y_{2}-x_{1} z_{2}+y_{1} w_{2}+z_{1} x_{2}\right) \mathbf{j} \\
+			&+\left(w_{1} z_{2}+x_{1} y_{2}-y_{1} x_{2}+z_{1} w_{2}\right) \mathbf{k}
+		\end{aligned}
+	\end{equation}
+
+	共轭:$q = w - \bm i - y \bm j - z \bm k.$性质为
+	\begin{equation}
+		\|\mathbf{q}\|=\sqrt{\mathbf{q} * \mathbf{q}^{\prime}}=\sqrt{w^{2}+x^{2}+y^{2}+z^{2}}
+	\end{equation}
+	
+	若模为1,则是单位四元数.$\bd q^{-1} = \bd q^\prime$.乘法满足结合律但不满足交换律.
+	
+	如何表达旋转?scalar+vector的表达方式:
+	\begin{equation}
+		\bd q = (s, \bd v)
+	\end{equation}
+	
+	得到
+	\begin{equation}
+		\mathbf{q}_{1} * \mathbf{q}_{2}=\left(s_{1} s_{2}-\mathbf{v}_{1} \cdot \mathbf{v}_{2}, s_{1} \mathbf{v}_{2}+s_{2} \mathbf{v}_{1}+\mathbf{v}_{1} \times \mathbf{v}_{2}\right)
+	\end{equation}
+
+	一个单位四元数对应一个旋转.$s = \cos \frac{\theta}{2}, \bd v = \bm e \sin \frac{\theta}{2}$.
+	
+	对于一个向量$\bm x, $其运算方式为将$\bm x$补成四元数$\bd x = (0, \bm x)$,求$\bd x^\prime = \bd q \bd x \bd q^{-1}$.计算复合只需要四元数相乘.
+	
+	四元数实际上是一个四维空间上的超球面$S^3$.很遗憾,它也不是欧式的.
+	
+	How to Estimate Rotation use Neural Network?
+	
+	方法一: Use a neural network to regress a rotation representation.\footnote{在此祝愿助教Jiayi Chen的论文被顺利接收.}
+	
+	方法二: Predict object coordinate or correspondence and then solve 
+	rotation.
+	
+	Orthogonal Procrustes Problem:
+	\begin{equation}
+		\widehat{\mathbf{A}}=\underset{\mathbf{A} \in \mathbb{R}^{p \times p}}{\operatorname{argmin}}\|\mathbf{M}-\mathbf{N A}\|_{F}^{2} \quad \text { subject to } \quad \mathbf{A}^{T} \mathbf{A}=\mathbf{I},
+	\end{equation}
+	
+	The solution can be expressed in terms of the SVD of a special matrix\footnote{这里为了保证行列式为$1$, 可以令$\widehat{\mathbf{A}}=\mathbf{U} \mathbf{\Lambda} \mathbf{U}^{T}$, 其中 $\mathbf{\Lambda} = \diag\dk{1, 1, \det \mathbf{V U}^{T}}$}.
+	\begin{equation}
+		\mathbf{M}^{T} \mathbf{N}=\mathbf{U D V}^{T} \text {, then } \widehat{\mathbf{A}}=\mathbf{V U}^{T}
+	\end{equation}
+	
+	SVD is very sensitive to outliers.For fitting rotations, we need to use RANSAC.
+	
+	How many pairs of 3D-3D correspondence do we need for 
+	hypothesis generation? 2 paris(如果连线不与转轴平行).
+	
+	\section{Instance-Level 6D Object Pose Estimation}
+	 Instance-level: a small set of known instances.
+	 
+	 Pose is defined for each instance according to their CAD model.
+	 
+	 Input: RGB/RGBD.如果有相机内参,那么没有D也可以.有D可以做得更好.\marginpar{\kaishu 为什么有内参没有深度也是可以的呢?因为这里我们是Instance-level的姿态估计,换言之我们已经有了这个物体的形状参数,其大小规格也是已知的.理论上我们甚至可以不停地试$\bd R, \bm t$使得转换后的形状与照片符合.}
+	 
+	 2D center localization.先预测2d图片的中心位置和深度.随后利用相机内参得到translation.
+	 
+	 PoseCNN: Translation Estimation:Voting.每个pixel给出一个指向中心的向量,得到center.
+	 
+	PoseCNN: Rotation Estimation. RoI?
+	
+	loss: $\mathcal{L}(\bd q, \bd q^{*})$.我们发现$\bd{q}$和$-\bd{q}$在旋转意义上是相同的,double coverage.因此一种可行的regression loss是取两者的最小值.
+	
+	PoseCNN则采用了另一种loss:
+	\begin{equation}
+		\mathrm{PLoss}(\widetilde{\bd{q}}, \bd{q}) = \frac{1}{2m}\sum_{\bd x \in \mathcal{M}} \norm{R(\widetilde{\bd{q}}) \bd x - R(\bd{q}) \bd x}^2
+	\end{equation}
+
+	对称性:(表示旋转的等价类)
+	\begin{equation}
+		\operatorname{SLoss}(\widetilde{\mathbf{q}}, \mathbf{q})=\frac{1}{2 m} \sum_{\mathbf{x}_{1} \in \mathcal{M}} \min _{\mathbf{x}_{2} \in \mathcal{M}}\left\|R(\tilde{\mathbf{q}}) \mathbf{x}_{1}-R(\mathbf{q}) \mathbf{x}_{2}\right\|^{2}
+	\end{equation}
+
+	PoseCNN的translation表现尚可,但是rotation的表现一般,这受限于四元数的性能.
+	
+	6D pose要求已知物体的cad模型,这在现实中不太可能.
+	
+	category-level 6D pose.希望能够泛化,输入3d输出6d pose,Without the need to use CAD model.
+	
+	王鹤老师的论文:Normalized Object Coordinate Space for Category-Level 6D Object Pose and Size Estimation,CVPR2019 oral.
+	
+	Detecting and estimating 6D pose and 3D size of previously unseen objects from certain categories from RGBD images.
+	
+	为什么要depth呢?因为对于未知的物体来说,仅有rgb而没有depth是无法确定其大小的.有了depth和相机内参,才能消除scale的不确定性.
+	
+	问题的主要难点是rotation的估计.前面我们看到PoseCNN即使对于已知的物体,做得也相当不好.
+	
+	间接法.Representation: Normalized Object Coordinate Space(NOCS)
+	
+	简而言之,我们需要对一张图片的像素预测其在CAD model 中的位置.你可能会问:不是没有CAD model吗?在此我们建立了一个reference space:NOCS.
+	
+	step 1:rotation Normalization:align object orientations.将所有物体对齐成同样的姿态,如马克杯的方向都向左,此时旋转矩阵为0.\marginpar{\kaishu 这里我们隐含了一个假设,即我们可以在没有其CAD的情形下讨论其朝向.如马克杯的把手.}
+	
+	Step 2 (translation normalization): zero-center the objects.对于新物体,将其紧bbox的中心作为原点.
+	
+	Step 3 (scale normalization): uniformly normalize the scales.将bbox的对角线长度设置为1.这样所有的都可以放入一个对角线长为1的正方体里了.NOCS = Reference frame.
+	
+	NOCS = Reference frame transformation from NOCS to camera space.
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.65]{figures/image_nocs_pose.png}
+		\caption{From Image to NOCS map to Pose.}
+		\label{}
+	\end{figure}
+
+	\subsection{Beyond Object Pose}
+	human/hand pose extimation.人体可以按照关节活动,并不是刚体.
+	
+	\clearpage
+	\section{Motion}
+	Today let’s focus on motions between two consecutive frames!
+	
+	Optical Flow 光流.
+	
+	图片的亮的部分在两帧之间的表象运动.
+	
+	几个假设:亮度相对稳定,小移动,一个点的运动与其邻居相似.
+	
+	\begin{equation}
+		\begin{array}{l}
+			I(x+u, y+v, t) \approx I(x, y, t-1)+I_{x} \cdot u(x, y)+I_{y} \cdot v(x, y)+I_{t} \\
+			I(x+u, y+v, t)-I(x, y, t-1)=I_{x} \cdot u(x, y)+I_{y} \cdot v(x, y)+I_{t} \\
+			\text { Hence, } I_{x} \cdot u+I_{y} \cdot v+I_{t} \approx 0 \quad \rightarrow \nabla I \cdot[u v]^{T}+I_{t}=0
+		\end{array}
+	\end{equation}
+
+	那么,这个方程足够解出所有$(u, v)$吗?我们有$n^2$个方程,但有$2n^2$个未知数,因此不够.
+	
+	The Aperture Problem.单纯从图像来看,运动可能并不完整.Barberpole Illusion.沿着线的方向不容易观测,垂直的容易被观察到.
+	
+	更多约束: Spatial coherence constraint. 1981年Lucas和Kanade提出了假设在每个pixel的5*5window当中flow相同.
+	
+	\begin{equation}
+		\left[\begin{array}{cc}
+			I_{x}\left(\mathrm{p}_{1}\right) & I_{y}\left(\mathbf{p}_{1}\right) \\
+			I_{x}\left(\mathbf{p}_{2}\right) & I_{y}\left(\mathbf{p}_{2}\right) \\
+			\vdots & \vdots \\
+			I_{x}\left(\mathbf{p}_{25}\right) & I_{y}\left(\mathbf{p}_{25}\right)
+		\end{array}\right]\left[\begin{array}{l}
+			u \\
+			v
+		\end{array}\right]=-\left[\begin{array}{c}
+			I_{t}\left(\mathbf{p}_{1}\right) \\
+			I_{t}\left(\mathbf{p}_{2}\right) \\
+			\vdots \\
+			I_{t}\left(\mathbf{p}_{25}\right)
+		\end{array}\right]
+	\end{equation}
+
+	即$\bd A_{25\times 2} \bm d_{2\times 1} = \bm b_{25\times 1}$
+	
+	得到
+	\begin{equation}
+		\bd A^\top \bd A \bm d = \bd A^\top \bm b
+	\end{equation}
+
+	什么时候可解?\marginpar{\kaishu 这和我们之前的Harris Corner Detector非常相似.光流当中最容易被捕捉的也是corner.corner与光流紧密相关.}
+	\begin{enumerate}
+		\item 可逆
+		\item 特征值不能太小
+		\item 良态
+	\end{enumerate}
+
+	FlowNet:最简单的想法:两张三通道图merge在一起,卷.dense regression.early fusion.
+	
+	或者:分别提取feature.两个网络share weight.然后结合到一起.middle fusion.
+	
+	过早fusion会使得问题空间变大.过完fusion会使得微观细节缺失.
+	
+	\clearpage
+	\section{RNN}
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.65]{figures/rnn-seqdata.png}
+		\caption{各种输入输出方式}
+		\label{}
+	\end{figure}
+	我们之前的网络,都是one-to-one,一个输入,一个输出.
+	
+	one-to-many:例如看图说话. image->sequence of words
+	
+	many-to-one.例如动作预测.
+	
+	many-to-many.例如video captioning.
+	
+	此外还有offline和online的处理.前者全部看完,后者边看边输出.
+	
+	Recurrent Neural Network.
+	
+	\begin{equation}
+		\begin{cases}
+			h_t = f_W\xk{h_{t-1}, x_t}
+			\\
+			y_t = f_{W_{hy}}\xk{h_t}
+		\end{cases}
+	\end{equation}
+
+	Vanilla RNN:
+	\begin{equation}
+		\begin{cases}
+			h_t = \tanh\xk{W_{hh}h_{t-1} + W_{xh}x_t}
+			\\
+			y_t = W_{hy}h_t
+		\end{cases}
+	\end{equation}
+
+	计算图,各个方向流向W.
+	
+	\subsection{Characer-Level Language Model}
+	sample:greedy? weighted sampling,根据字母的权,但可能选到冷僻的,比如hh.?更高级:beam search.每次选三个,两层三叉树,选取最后的top3?
+	
+	实际上将h和x结合的时候,常常先将x进行embedding, W[h,x]->W[h, g(x)].比如,hidden layer可能之后512维,但是输入如果是词向量,那么可能有几万维,非常不均衡.因此将embedding到合适的维度.此外,word embedding已经有现成的处理.
+	
+	BP时,不同位置的W被loss调用了不同次.这个操作开销极大.
+	
+	解决方法:truncated BP.截断.比如FP时是从0到t,BP只算从t到t-6.
+	
+	pytorch的命令:stop\_gradient.
+
+	RNN在长程记忆里会出现问题.delta t一般被称为sequence length.如果过短则相关性不强,过长则cost过多.
+	
+	RNN tradeoff.
+	
+	multilayer:2层即可
+	
+	\subsection{Vanilla RNN Gradient Flow}
+	
+	tanh的梯度恒小于1,梯度消失.
+	
+	gradient clipping.
+	
+	\subsection{LSTM}
+	信息传递的一部分放入c?
+	
+	cell state是long-term memory.我们知道对于普通的tanh,往01之间映射,那么$h_t$和很早之前的$h_i$之间的联系就比较微弱了.而LSTM中的c则一直把信息保留(f也是经过sigmoid激活的,在01之间,可以选择记住或者遗忘),最后h将c进行处理.
+	
+	核心结构:old info和new info的加和.若f=1,则就是skiplink.换言之c之间有梯度的旁路.
+	
+	\clearpage
+	\section{Video analysis}
+	video=2d+time
+	
+	数据量太过庞大.4D.
+	
+	提取特征,最后放在一起.直接放在一起太大.逐帧分析?不管时间维度.比如跑步录像.但如果两脚都着地?可能误判.maxpool?抹去序关系反而不正确.
+	
+	3D CNN?将时间视作第三个空间维度.但问题在于:这对感受野的要求比较大.在视频当中,一件事情的效应可能在相当长的时间之后才能体现,但CNN也不可能cover任意长的时间序列.也就是说,在视频处理当中,空间范围和时间范围地位并不对等.
+	
+	early fusion:所有信息在第一步混在一区提取.3D CNN在各个维度感受野的增长比较均匀.
+	
+	C3D: The VGG of 3D CNNs.第一次pool没有在时间维上处理,不希望提取得太早.
+	
+	3d的kernel size比较敏感,$5^3 > 11^2$.移动多了一个维度,计算代价更大.得益于其网络的精良设计,C3D的 sports-1m 的top5 acc还是达到了84\%.
+	
+	人类识别运动的关键:Motion,不是pixel.
+	
+	Use Both Motion and appearance: two-stream fusion network.它使用经典算法获得flow输入神经网络.神经网络分为两支,一支做空间,一支做时间.时间(flow)这一支使用了early fusion,因为相对于RGB,光流的信息已经比较清晰.
+	
+	Modeling Long-Term Temporal Structure.我们希望处理序列,RNN如何? aggregation(聚合).
+	
+	CNN和RNN一起训练计算代价太大\marginpar{\kaishu 原来RNN是独立的网络吗?}.因此先train CNN,不向其传递梯度,只训练RNN.但这样CNN与RNN可能优化目标不同.
+	
+	end to end training:端到端训练.所有optimization variable同时被优化.
+	
+	Recurrent convolutional Network.
+	
+	\clearpage
+	\section{Generative Models}
+	discriminative vs generative.
+	
+	Objectives:
+	
+	learn $p_{model}(x)$ that approximates $p_{data}(x)$.换言之假设image$ \in \mathcal{X} = \mathcal{R}^{3\times H \times W}\sim p_{data}$.我们想要习得这个分布.
+	
+	隐式和显式.
+	
+	本门课接触三个生成模型:pixelRnn, , gan
+	
+	expilcity density model, or Fully Visible Belief Network (FVBN)
+	
+	假设我们的隐式概率模型是$p(x) = p(x_1, \cdots, x_n)$.这一步没有引入任何信息.应用链式法则可得:
+	
+	\begin{equation}
+		p(x)=\prod_{i=1}^{n} p\left(x_{i} \mid x_{1}, \ldots, x_{i-1}\right)
+	\end{equation}
+	
+	什么样的神经网络能够处理这样的连续的条件概率?(显然我们希望获得一个shared 网络)
+	
+	RNN.但这样有问题:首先网络太大,其次如果要截断梯度,语义不明.
+	
+	CNN.只依赖局部的pixel.train的时候可并行计算,因为像素已经存在.但生成仍然缓慢:必须按照顺序生成.\marginpar{\kaishu 但是凭什么认为只和上面的像素相关呢?}
+	
+	说实话,效果不咋地...
+	
+	优点:可显示表达,容易优化,采样好(?相对).缺点:慢
+	
+	\subsection{Approximate density:Variational Autoencoder}
+	变分自动编码器?
+	
+	PixelRNN实际上只是非常低维的.因为只有少数取值.
+	
+	VAEs:
+	
+	\begin{equation}
+		p_{\theta}(x)=\int p_{\theta}(z) p_{\theta}(x \mid z) d z
+	\end{equation}
+	
+	如何进行学习?
+	
+	L2 loss和高斯噪声?为什么输出会比较糊.
+	
+	看起来在前面的AE当中,我们只需要decoder部分就可以完成生成.事实果真如此吗?如果只有decoder,那么z服从何种分布完全不了解(总不能是均匀分布吧).需要它的分布容易sample,不要分布太广(太过稀疏不利于网络学习).\marginpar{\kaishu 那么为什么要选用高斯分布呢?缺失没有一种原则说明哪种分布更好.}
+	
+	两者都容易算,但是其积分不容易计算.蒙特卡洛,维数太高.
+	
+	\begin{figure}[htbp]
+		\centering
+		\includegraphics[scale=0.65]{figures/VAE.png}
+		\caption{推导过程}
+		\label{}
+	\end{figure}
+
+	
+	我们此前接触的网络都是判别模型,given x, 判定y, P(X|Y).上节课介绍的生成模型,所有的变量就是$X$,我们学习$P(X)$或者$P(X|Y)$(if labels are available).本学期我们准备介绍的PixelRNN/CNN,VAE and GAN.
+	
+	\subsection{重学VAE}
+	VAE如果有统计学习的基础,可以更容易地理解.\marginpar{\kaishu }
+	
+	VAE来自Auto Encoder. 我们的生成模型有一个(latent space?)中的向量$z$.一般取先验分布为$\mathcal{N}(\bm 0, \bd I)$.所有的函数都需要支持概率输出.这与AE不同,后者一般只输出一个值.那么如何从一个值变成分布呢?将输出经过一个Probabilistic model.即,你认定了它服从某种分布之后,再转换为概率分布.(比如,你认为它是高斯噪声,那么这就是你的概率模型,也就意味着你默许了生成图片中的高斯噪声.当然,你也可以选择其他概率模型.)
+	
+	\marginpar{\kaishu 这里我们默许了$z \sim \mathcal{N}(\bm 0, \bd I)$}
+	\begin{equation}
+		p_{\theta}(x)=\int p_{\theta}(z) p_{\theta}(x \mid z) d z  
+	\end{equation}
+
+	核心区别:估计mu, sigma
+	
+	如何计算积分?intractable.那么,MC方法可以吗?就是:
+	
+	\begin{equation}
+		\log p(x) \approx \log \frac{1}{k} \sum_{i=1}^{k} p_{\theta}\left(x \mid z^{(i)}\right), \text { where } z^{(i)} \sim p(z)
+	\end{equation}
+	
+	但是,我们很难在latent空间中精准地找到某张照片对应的z,因此取样的绝大多数结果都是0,效果必定差.
+	
+	\begin{wrapfigure}{l}{6cm}
+		\includegraphics[scale=0.5]{figures/VAE_2.png}
+		\caption{VAE结构}
+	\end{wrapfigure}
+	
+	另一种方式:利用Bayes公式,如果能够引入后验概率$p_{\theta}(z|x)$,
+	\begin{equation}
+		p_{\theta}(x)=\frac{p_{\theta}(x, z)}{p_{\theta}(z \mid x)}=\frac{1}{p_{\theta}(z \mid x)} p(z) p_{\theta}(x \mid z)
+	\end{equation}
+
+	但是我们并没有从根本上解决问题.现在,我们希望学一个神经网络近似$p_{\theta}(z \mid x)$,\marginpar{\kaishu 那$p_{\theta}(x \mid z)$为啥不能学?}也就是学习一个$q_{\phi}(z|x)$来近似$p_{\theta}(z|x)$.最后我们的网络结构如图.如果是AE,那么就没有方差一项了,唯一对应,没有随机性.这里,注意$q_{\phi}$只是对$p$的近似.
+	
+	\clearpage
+	
+	\begin{equation}
+		\begin{aligned}
+			\log p_{\theta}\left(x^{(i)}\right) &=\mathbf{E}_{z \sim q_{\phi}\left(z \mid x^{(i)}\right)}\left[\log p_{\theta}\left(x^{(i)}\right)\right] \quad\left(p_{\theta}\left(x^{(i)}\right) \text { Does not depend on } z\right) \\
+			&=\mathbf{E}_{z}\left[\log \frac{p_{\theta}\left(x^{(i)} \mid z\right) p(z)}{p_{\theta}\left(z \mid x^{(i)}\right)}\right] \quad(\text { Bayes' Rule) }\\
+			&=\mathbf{E}_{z}\left[\log \frac{p_{\theta}\left(x^{(i)} \mid z\right) p(z)}{p_{\theta}\left(z \mid x^{(i)}\right)} \frac{q_{\phi}\left(z \mid x^{(i)}\right)}{q_{\phi}\left(z \mid x^{(i)}\right)}\right] \quad \text { (Multiply by constant) } \\
+			&=\mathbf{E}_{z}\left[\log p_{\theta}\left(x^{(i)} \mid z\right)\right]-\mathbf{E}_{z}\left[\log \frac{q_{\phi}\left(z \mid x^{(i)}\right)}{p_{\theta}(z)}\right]+\mathbf{E}_{z}\left[\log \frac{q_{\phi}\left(z \mid x^{(i)}\right)}{p_{\theta}\left(z \mid x^{(i)}\right)}\right] \quad(\text { Logarithms }) \\
+			&=\mathbf{E}_{z}\left[\log p_{\theta}\left(x^{(i)} \mid z\right)\right]-D_{K L}\left(q_{\phi}\left(z \mid x^{(i)}\right) \| p(z)\right)+D_{K L}\left(q_{\phi}\left(z \mid x^{(i)}\right) \| p_{\theta}\left(z \mid x^{(i)}\right)\right)
+		\end{aligned}
+	\end{equation}
+	
+	我们试图最大化下界,它被称为Evidence Lower BOund(ELBO).第一项最大化,也就是让网络输出的分布的theta接近真实的分布(均值接近,方差小\marginpar{\kaishu 方差变大?},那么第一项就大!另外注意上式的$x^{(i)}$并不是网络输出,而是输入.)第二项最大化,也就是希望q与p(z)接近.这是因为VAE必须知道z的分布情况,否则生成的时候很难将z取值在概率密集的部分.当然,这和我们真正的的目的还是有所偏差,因为loss的要求是将每个xi的生成的z都是Gaussian,但我们实际的意图是将所有xi构成的集合生成的z的集合满足Gaussian.\marginpar{\kaishu 所以,这有什么区别?虽然我们添加这一项希望其接近高斯,但这一项绝不可真正为0,否则就与x无关了,这样就不含x的信息了,从而不可能进行重建}.
+	
+	因此,VAE的loss非常有趣,它的$\phi$看似只出现在第二项,但实际上还出现在第一项的$z$里面,因此我们将$z$写成$z=\mu_{z \mid x}+\epsilon \sigma_{z \mid x}$,从而有梯度可以回传.另外,ELBO的计算也是intractable的,因为第一项的$\mathbb{E}_{z}$这一步就计算不出来,我们直接扔掉期望,取它自己作为MC的估计.
+	
+	那你怎么不一开始就这么干?
+	
+	我们说,两个被估计的量分别是$\log\xk{\mathbb{E}_z \zk{p_{\theta} \xk{x^{(i)}  \mid z}}}$和$\mathbb{E}_{z} \log p_{\theta} \xk{x^{(i)}\mid z}$,前者的$z \sim p$,后者则是q,后者实际上更加集中.而且log和期望的次序也交换了.
+	
+	实际上我们有时直接令$\Sigma_{x \mid z} = \bd I$.因为loss当中,形式为
+	\begin{equation}
+		\exp^{-\xk{\frac{x - \mu}{\sigma}}^2}
+	\end{equation}
+	
+	最后一个问题:这东西跟变分(variational)究竟有什么关系?要说起变分,我们不得不先讲泛函\marginpar{\kaishu 同时想起了我学得极差的数理方法和更差的数学分析}.泛函简单地说就是函数的函数,或广义的函数.变分,是指自变量\textbf{函数}发生的变化,为与自变量的变化$\dd x$区分,我们一般用$\delta$表示.例如我们想要求解空间中$A, B$两点之间最短的曲线,设任意一条曲线为$f(x, y)$,其长度为
+	\begin{equation}
+		l = \int_{A}^{B} f(x,  y) \dd s.
+	\end{equation}
+
+	当自变量函数$f$发生微小变化$\delta f$时,长度也发生了$\delta l$的变化.运用EL方程,我们可以求得
+	\begin{equation}
+		\frac{\delta l}{\delta f} = 0
+	\end{equation}
+	时的函数$f$.
+	
+	在VAE当中,我们实际上也是希望找到$q_\theta$来近似$p_{\theta}$,也是变分的过程.但是实际上我们并没有使用任何变分法的技术,因为我们已经加入了先验的知识进行参数化,从而将搜索空间限制为$\theta$上,而非无限维的函数空间.
+	
+	
+	\subsection{VAE}
+	
+	前面我们曾经讲过AutoEncoder的概念,其实它可以视为一种降维手段,将原数据通过一定处理(如多层神经网络)获得其另一种表示(或称编码),这个过程就是encode,然后需要时可以进行解码恢复.它本质上可以视为学习两个映射:
+	\begin{equation}
+		\begin{array}{l}
+			\phi: \mathcal{X} \rightarrow \mathcal{F} \\
+			\psi: \mathcal{F} \rightarrow \mathcal{X} \\
+			\phi, \psi=\underset{\phi, \psi}{\arg \min }\|\mathcal{X}-(\psi \circ \phi) \mathcal{X}\|^{2}
+		\end{array}
+	\end{equation}
+	
+	在这一节我们要讲述的VAE也是一种AutoEncoder,只不过它引入了一些概率上的内容,编码解码不再是一一对应的,而是服从一些概率分布.具体来说,\marginpar{\kaishu 这里的$\bm X, \bm Z$都可能是随机向量.}我们有一些对$\bm X$观测而得到的量$\bm x_i, i = 1, 2, \cdots, n$, 我们希望将其进行编码之后,得到由另一些变量表示的形式,后者被称为隐变量(latent variable).然后我们希望再从这些隐变量中恢复得到服从$\bm X$分布的量.也就是说,我们希望从$\bm X$的一些观测值出发,试图用一些其他的变量$\bm Z$(即隐变量)描述这个量的概率分布,这样我们就\textbf{间接}习得了$\bm X$的分布$p(\bm X)$,同时我们还要给出$\bm Z$服从的分布$q(\bm Z)$,这样我们就可以依据分布$q$选取另外的$\bm Z$,然后通过解码来生成一些新的$\bm x_j$,后者仍然服从$\bm X$的分布,但是我们此前没有见过的,此时解码器就变成了一个关于$\bm X$的生成模型.
+	
+	我们整理一下上面的内容,假设所有已知数据$\bm x$来自一个未知的概率分布$P(\bm x)$,我们希望用一组参数$\theta$来确定一个参数分布$p_{\theta}(\bm x)$来拟合$P(\bm x)$.我们假定$\bm x$与另一些隐变量$\bm z$有关,那么依据边缘分布和条件分布的相关性质可知
+	\begin{equation}
+		p_{\theta}(\bm x) = \int_{\bm z} p_\theta(\bm x, \bm z) \dd \bm z = \int_{\bm z} p_\theta(\bm x\mid \bm z) p_{\theta}(\bm z) \dd \bm z
+	\end{equation}
+
+	这里$p(\bm z)$一般被称为先验分布,一般取其为标准正态分布\marginpar{\kaishu 正因为$\bm z$是先验的,所以$p_{\theta}(\bm z)$也可以写成$p(\bm z)$,因为它没有参数.}.而$p_{\theta}(\bm z \mid \bm x)$则被称为后验分布.编码器学习的就是$p_{\theta}(\bm z \mid \bm x)$, 因为它代表了如何从$\bm x$转换到隐变量.解码器学习的则是$p_{\theta}(\bm x \mid \bm z)$.
+	
+	上式并不能解决我们的问题.尽管我们确定了先验分布,而且$p_{\theta}(\bm x \mid \bm z)$可由解码器学习,但上式的积分是难以计算的,因为实际操作中我们不可能遍历$\bm z$所在的高维空间.所以我们试图用贝叶斯公式曲线救国:
+	
+	\begin{equation}
+		p_{\theta}(\bm x) = \frac{p_\theta(\bm x\mid \bm z) p(\bm z)}{p_\theta(\bm z\mid \bm x)}
+	\end{equation}
+
+	那么$p_\theta(\bm z\mid \bm x)$又怎么获得呢?这其实是编码器负责学习的分布,\marginpar{\kaishu 这可能就是神经网络之道:凡是不容易算不好表示的东西,通通丢给神经网络去学习...}因此我们用编码器来学习它.我们记编码器学习的分布为$q_\phi(\bm z\mid \bm x)$.
+	
+	那么如何度量学习的好坏呢?我们知道两个分布的差异可以用KL-divergence度量.
+	
+	最后我们用一句话来概括VAE的工作,然后进入形式化的推导:在VAE当中,输入数据$\bm X$是来自于一个特定的先验参数分布$p_{\theta}(\bm x)$,随后我们同时训练encoder和decoder,使得在我们学习的后验分布$q_\phi(\bm z\mid \bm x)$和真实后验分布$p_\theta(\bm z\mid \bm x)$的KL散度$\operatorname{D_{KL}}(q_\phi \parallel p_\theta)$作为度量之下的重建误差最小.
+	
+	\subsubsection{ELBO}
+	计算学习的后验分布$q_\phi(\bm z\mid \bm x)$和真实后验分布$p_\theta(\bm z\mid \bm x)$的KL散度$\operatorname{D_{KL}}(q_\phi \parallel p_\theta)$得到:
+	\begin{equation}
+		\begin{aligned}
+			\operatorname{D_{KL}}\left(q_{\phi}(\bm{z} \mid \bm{x}) \| p_{\theta}(\bm{z} \mid \bm{x})\right) &=\int q_{\phi}(\bm{z} \mid \bm{x}) \log \frac{q_{\phi}(\bm{z} \mid \bm{x})}{p_{\theta}(\bm{z} \mid \bm{x})} \dd \bm{z} \\
+			&=\int q_{\phi}(\bm{z} \mid \bm{x}) \log \frac{q_{\phi}(\bm{z} \mid \bm{x}) p_{\theta}(\bm{x})}{p_{\theta}(\bm{z}, \bm{x})} \dd \bm{z} \\
+			&=\int q_{\phi}(\bm{z} \mid \bm{x})\left(\log \left(p_{\theta}(\bm{x})\right)+\log \frac{q_{\phi}(\bm{z} \mid \bm{x})}{p_{\theta}(\bm{z}, \bm{x})}\right) \dd \bm{z} \\
+			&=\log \left(p_{\theta}(\bm{x})\right)+\int q_{\phi}(\bm{z} \mid \bm{x}) \log \frac{q_{\phi}(\bm{z} \mid \bm{x})}{p_{\theta}(\bm{z}, \bm{x})} \dd \bm{z} \\
+			&=\log \left(p_{\theta}(\bm{x})\right)+\int q_{\phi}(\bm{z} \mid \bm{x}) \log \frac{q_{\phi}(\bm{z} \mid \bm{x})}{p_{\theta}(\bm{x} \mid \dd \bm{z}) p_{\theta}(\bm{z})} \dd \bm{z} \\
+			&=\log \left(p_{\theta}(\bm{x})\right)+E_{\bm{z} \sim q_{\phi}(\bm{z} \mid \bm{x})}\left(\log \frac{q_{\phi}(\bm{z} \mid \bm{x})}{p_{\theta}(\bm{z})}-\log \left(p_{\theta}(\bm{x} \mid  \bm{z})\right)\right) \\
+			&=\log \left(p_{\theta}(\bm{x})\right)+\operatorname{D_{KL}}\left(q_{\phi}(\bm{z} \mid \bm{x}) \| p_{\theta}(\bm{z})\right)-\mathbb E_{\bm{z} \sim q_{\phi}(\bm{z} \mid \bm{x})}\left(\log \left(p_{\theta}(\bm{x} \mid \bm{z})\right)\right)
+		\end{aligned}
+	\end{equation}
+	
+	将上式重写成
+	\begin{equation}
+		\log \left(p_{\theta}(\bm{x})\right) - \operatorname{D_{KL}}\left(q_{\phi}(\bm{z} \mid \bm{x}) \| p_{\theta}(\bm{z} \mid \bm{x})\right) = -\operatorname{D_{KL}}\left(q_{\phi}(\bm{z} \mid \bm{x}) \| p_{\theta}(\bm{z})\right)+\mathbb E_{\bm{z} \sim q_{\phi}(\bm{z} \mid \bm{x})}\left(\log \left(p_{\theta}(\bm{x} \mid \bm{z})\right)\right)
+	\end{equation}
+	
+	左侧第一项是我们希望最大化的输出的概率,第二项是希望最小化的分布差异,综合起来应该最大化左侧.我们再来看右侧,第一项是$q_{\phi}(\bm{z} \mid \bm{x})$和$p(\bm z)$之间的KL散度,最小化这一项说明我们希望后验分布也符合正态.最后一项最大化则是希望我们的解码器预测更加准确.使用优化理论的常用手段,我们将损失函数定义为
+	\begin{equation}
+		\mathcal{L}_{\theta, \phi} = -RHS = \operatorname{D_{KL}}\left(q_{\phi}(\bm{z} \mid \bm{x}) \| p_{\theta}(\bm{z})\right)-\mathbb E_{\bm{z} \sim q_{\phi}(\bm{z} \mid \bm{x})}\left(\log \left(p_{\theta}(\bm{x} \mid \bm{z})\right)\right)
+	\end{equation}
+
+	我们希望求得
+	\begin{equation}
+		\theta^{*}, \phi^{*} = \arg\min_{\theta, \phi} \mathcal{L}_{\theta, \phi}
+	\end{equation}
+
+	现在我们来看看这两项具体如何运算.第一项,由于我们假定后验分布也是高斯分布,两个高斯分布的KL散度有闭式解\marginpar{\kaishu 因为我们假定后验分布的隐变量彼此独立,即$\bm \Sigma = \diag \{ \sigma_1^2, \cdots, \sigma_d^2\}$, 因此多维的情形可以由一维计算后求和.计算过程略.}
+	
+	\begin{equation}
+		\operatorname{D_{KL}}(p(\bm z \mid \bm x) \| q(\bm z))=\frac{1}{2} \sum_{k=1}^{d}\left(\mu_{(k)}^{2}(x)+\sigma_{(k)}^{2}(x)-\ln \sigma_{(k)}^{2}(x)-1\right)
+	\end{equation}
+	
+	对于后验分布,我们有
+	\begin{equation}
+		q(\bm x \mid \bm z)=\frac{1}{\prod_{k=1}^{D} \sqrt{2 \pi \tilde{\sigma}_{(k)}^{2}(\bm z)}} \exp \left(-\frac{1}{2}\left\|\frac{\bm x-\tilde{\mu}(\bm z)}{\tilde{\sigma}(\bm z)}\right\|^{2}\right)
+	\end{equation}
+
+	得到
+	\begin{equation}
+		-\ln q(\bm x \mid \bm z)=\frac{1}{2}\left\|\frac{\bm x-\tilde{\mu}(\bm z)}{\tilde{\sigma}(\bm z)}\right\|^{2}+\frac{D}{2} \ln 2 \pi+\frac{1}{2} \sum_{k=1}^{D} \ln \tilde{\sigma}_{(k)}^{2}(\bm z)
+	\end{equation}
+
+	这里我们常常令$\sigma_i = 1$,即协方差矩阵为单位阵.否则对于上面这一项,网络可以通过一直增大方差的方式来减小loss.此时损失函数就变为MSE.\marginpar{\kaishu 算了,还是看参考文献\cite{kexuefm-autoencoder}吧.}
+	
+	\clearpage
+	
+	\section{GAN}
+	
+	GAN:我劝PixelCNN和VAE,先把生成的这个理念先搞懂.你VAE什么的都在搞概率论,他能搞吗?搞不了,没这个能力知道吗?
+	
+	minimax game:
+	\begin{equation}
+		\min _{\theta_{g}} \max _{\theta_{d}}\left[\mathbb{E}_{x \sim p_{d a t a}} \log D_{\theta_{d}}(x)+\mathbb{E}_{z \sim p(z)} \log \left(1-D_{\theta_{d}}\left(G_{\theta_{g}}(z)\right)\right)\right]
+	\end{equation}
+
+	交替训练.防止梯度相似?\marginpar{discriminator: 
+		\includegraphics[scale=0.28]{figures/ddgg.png}}
+	
+	但是有一点值得注意:上式中$\log(1-x)$这一函数在$x$接近$0$时梯度非常小.而训练之初,discriminator可以轻易辨别出generator生成的图片为假,而generator的梯度又太小,于是就形成了discriminator把generator按在墙角使劲打,后者还跑不出去.
+	
+	
+	
+	总之,这个loss对于generator是很不利的.
+	
+	Non-Saturating Loss functions.
+	
+	如何衡量网络的表现?很难有客观的度量.
+	
+	Qualitative GAN Generator Evaluation
+	
+	主观度量.Nearest neighbors: to detect overfitting, generated samples are shown next to their nearest neighbors in the training set.这也是我们之前interpolation要求渐变的原因,防止你只学了个记忆功能.如果是这样,那么连续变化会有非常明显的不连续.
+	
+	User study
+	
+	Mode drop and mode collapse: Over datasets with known modes (e.g. a GMM or a labeled dataset), modes are computed as by measuring the distances of generated data to mode centers.
+	
+	mode collapse:假如对所有z都输出同一张gt呢?我们并没有规定生成所有类型的图片,假如网络只生成了一小部分类型(drop),或者只生成一张图(mode collapse).猫捉老鼠:g总是只生成一张,d总是说这是假的.(mode chasing)根源:VAE要求所有类型都为真,而GAN则只需要保证"我生成的"图片真.这也是GAN发展早期最棘手的问题之一.
+	
+	Quantitative Measurement: FID
+	
+	FID实际上就是将gt和生成图片都转换到一个特征空间,随后认为其符合正态,度量其统计参数.
+	
+	\begin{equation}
+		\operatorname{FID}(r, g)=\left\|\mu_{r}-\mu_{g}\right\|_{2}^{2}+\operatorname{Tr}\left(\Sigma_{r}+\Sigma_{g}-2\left(\Sigma_{r} \Sigma_{g}\right)^{\frac{1}{2}}\right)
+	\end{equation}
+	
+	FID measure\marginpar{\kaishu 既关心真不真,也关心全不全.} is sensitive to image distortions. From upper left to lower right: Gaussian noise, Gaussian blur, implanted black rectangles, swirled images, salt and pepper noise, and CelebA dataset contaminated by ImageNet images.
+	
+	GAN在语义上的加减:生成好的图片的网络,其隐变量也必然学习了一些好的特征.latent space structure也必然很好.
+	
+	\clearpage
+	\appendix
+	\include{condition-number}
+	\include{transformation-in-space}
+	\clearpage
+	\section{DOF and rank in essential matrix and fundamental matrix}
+	\label{DOFandRank}
+	所谓矩阵的自由度,实际就是指矩阵中有多少个元素可以独立变化.例如,一个$m \times n$的矩阵在不加任何限制的情况下有$mn$个自由度,而对于$n$阶上三角矩阵,其自由度为$n(n+1)/2$.
+	
+	从三维的物体投影成二维的图像,这个过程其实就是射影变换.在射影空间当中的单应矩阵$\bd H$(可以理解为我们的投影变换矩阵)天然少一个自由度,因为自原点出发位于同一条线上的两个点,在射影之后无法区分,所以$\bd H \sim \alpha \bd H$.
+	
+	测地线距离:geodesic distance.
+	
+	
+	\include{appendix-QRDecomposition}
+
+    \bibliographystyle{IEEEtran}
+    \bibliography{document}
+\end{document}
