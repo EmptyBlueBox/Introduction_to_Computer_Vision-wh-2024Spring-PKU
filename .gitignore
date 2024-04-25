@@ -19,7 +19,8 @@ experiments
 *.lot
 *.ps
 *.toc
-notes/src
+*.out
+# notes/src
 
 homework-3
 

@@ -1,0 +1,146 @@
+\section{Transfromation in $\mathbb R^n$\label{transformation}}
+在这一小节中我们简单介绍各种变换.
+
+\textbf{等距变换}顾名思义,就是保持距离的变换.在其基本形式当中可以表示为平移加旋转,这也是我们已经接触过的.矩阵表示为
+\begin{equation}
+	\begin{bmatrix}
+		x^\prime
+		\\
+		y^\prime
+		\\
+		1
+	\end{bmatrix} = 
+	\begin{bmatrix}
+		\bd R & \bm t
+		\\
+		\bm 0^\top & 1
+	\end{bmatrix}
+	\begin{bmatrix}
+		x
+		\\
+		y\\
+		1
+	\end{bmatrix}
+\end{equation}
+其中的$\bd R$为旋转矩阵,也是正交矩阵.
+
+\textbf{相似变换}是指形状不变,但可以改变大小和位置的变换.直观地说就是等距变换加上缩放.矩阵表示为
+\begin{equation}
+	\begin{bmatrix}
+		x^\prime
+		\\
+		y^\prime
+		\\
+		1
+	\end{bmatrix} = 
+	\begin{bmatrix}
+		\bd S \bd R & \bm t
+		\\
+		\bm 0^\top & 1
+	\end{bmatrix}
+	\begin{bmatrix}
+		x
+		\\
+		y\\
+		1
+	\end{bmatrix}, \quad \bd S = 
+	\begin{bmatrix}
+		s & 0
+		\\ 
+		0 & s
+	\end{bmatrix}
+\end{equation}
+其中的$\bd S$表示缩放.它保持边的长度比例和角度不变.理解仿射变换的一种有益方法是将线性变换$\bd A$视作旋转和非均匀缩放的组合.这是因为我们可以对$\bd A$进行SVD:
+\begin{equation}
+	\bd A = \bd U \bd \Sigma \bd V^\top
+\end{equation}
+
+由于$\bd U, \bd V^\top$都是正交矩阵,可以视作旋转,而$\bd \Sigma = \diag \{\sigma_1, \sigma_2\}$则可以视为非均匀缩放.
+
+\textbf{仿射变换}则是一种保持了点,线和平行性的变换.它可以表示为一个线性变化加一次平移.也就是
+\begin{equation}
+	T(\bm v) = \bd A \bm v + \bm t
+\end{equation}
+
+同样在齐次坐标下我们可以写作
+\begin{equation}
+	\begin{bmatrix}
+		x^\prime
+		\\
+		y^\prime
+		\\
+		1
+	\end{bmatrix} = 
+	\begin{bmatrix}
+		\bd A & \bm t
+		\\
+		\bm 0^\top & 1
+	\end{bmatrix}
+	\begin{bmatrix}
+		x
+		\\
+		y\\
+		1
+	\end{bmatrix}
+\end{equation}
+只不过这里的矩阵$\bd A$可以代表任意的线性变换了.
+
+\textbf{射影变换}则只保留了将线映射成线,而不保证平行性.它表示为
+\begin{equation}
+	\begin{bmatrix}
+		x^\prime
+		\\
+		y^\prime
+		\\
+		1
+	\end{bmatrix} = 
+	\begin{bmatrix}
+		\bd A & \bm t
+		\\
+		\bm v & b
+	\end{bmatrix}
+	\begin{bmatrix}
+		x
+		\\
+		y\\
+		1
+	\end{bmatrix}
+\end{equation}
+不难看出它包含了上述所有的变换种类,添加了额外的自由度$\bm v$.注意并不总能够通过缩放矩阵使得$b = 1$,因为$b$可能为$0.$当$b \ne 0$时,射影变换可以做如下分解:
+\begin{equation}
+	\bd H = \bd H_S \bd H_A \bd S_P = 
+		\begin{bmatrix}
+			s\bd R & \bm t/v
+			\\
+			\bm 0^\top & 1
+		\end{bmatrix}
+		\begin{bmatrix}
+			\bd K & \bm 0
+			\\
+			\bm 0^\top & 1
+		\end{bmatrix}
+		\begin{bmatrix}
+			\bd I & \bm 0
+			\\
+			\bm v^\top & b
+		\end{bmatrix}
+		= 
+		\begin{bmatrix}
+			\bd A & \bm t
+			\\
+			\bm v & b
+		\end{bmatrix}
+\end{equation}
+其中
+\begin{equation}
+	\bd A = s\bd R\bd K + \frac{1}{v}\bm t \bm v^\top
+\end{equation}
+且$\bd K$是满足$\det \bd K = 1$的归一化上三角矩阵.如果限定$s$的符号,它是唯一的,只需做一次QR分解即可得到.
+
+不难看出这个分解是将射影变换分解为相似变换$\bd H_S$,仿射变换$\bd H_A$和一个有约束的透视变换(特殊的射影变换)$\bd H_P$组成.
+
+
+在射影变换下,四个点的交比仍然保持不变.四个点$P_1, P_2, P_3, P_4$的交比定义为
+\begin{equation}
+	\text { cross ratio }=\frac{\left\|P_{3}-P_{1}\right\|\left\|P_{4}-P_{2}\right\|}{\left\|P_{3}-P_{2}\right\|\left\|P_{4}-P_{1}\right\|}
+\end{equation}

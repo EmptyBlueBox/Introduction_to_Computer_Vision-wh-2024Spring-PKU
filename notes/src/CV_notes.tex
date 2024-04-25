@@ -1,0 +1,70 @@
+\include{package}
+
+
+% 文档标题
+\title{
+{\normalfont\normalsize\textsc{
+Peking University\\
+Introduction to Computer Vision, Spring 2024 \\[25pt]}}
+\horrule{0.5pt}\\
+\sffamily{Introduction to Computer Vision\\Course Notes}\\
+\horrule{1.8pt}\\[20pt]
+}
+
+% 作者和联系方式
+\author[1]{Prof. He Wang\thanks{https://hughw19.github.io/}}
+\author[2]{林晓疏\thanks{wangyuanqing@pku.edu.cn}}
+\author[2]{Yutong Liang\thanks{lyt0112@outlook.com}}
+\affil[1]{主讲教师}
+\affil[2]{笔记整理}
+
+% 文档日期
+\date{\today}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}  % 在页眉左侧显示章节名
+\fancyfoot[C]{\thepage}  % 在页脚中间显示页码
+
+
+\begin{document}
+	\maketitle
+	\include{preface}
+	\clearpage
+	\tableofcontents
+	\include{01.edge_detection}
+	\include{02.keypoint_detection}
+	\include{03.line_fitting}
+	\include{04.CNN}
+	\include{05.CNN_training}
+	\include{06.CNN_improvement}
+	\include{07.classification}
+	\include{08.CNN_for_classification}
+	\include{09.segmentation}
+	\include{10.3Dvision}
+	\include{11.camera_carlibration}
+	\include{12.single_view_geometry}
+	\include{13.epipolar_geometry}
+	\include{14.3D_data}
+	\include{15.3D_deep_learning}
+	\include{16.object_detection_and_instance_segmentation}
+	\include{17.instance_segmentation}
+	\include{18.pose_and_motion}
+	\include{19.Instance_Level_6D_Object_Pose_Estimation}
+	\include{20.motion}
+	\include{21.RNN}
+	\include{22.video_analysis}
+	\include{23.generative_model}
+	\include{24.GAN}
+
+	\clearpage
+	% appendix: appendix-QRDecomposition, condition-number, transformation-in-space
+	\appendix
+	\include{condition-number}
+	\include{transformation-in-space}
+	\include{DOF_and_rank}	
+	\include{appendix-QRDecomposition}
+
+    \bibliographystyle{IEEEtran}
+    \bibliography{document}
+\end{document}

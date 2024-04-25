@@ -1,0 +1,26 @@
+\section{Video analysis}
+video=2d+time
+
+数据量太过庞大.4D.
+
+提取特征,最后放在一起.直接放在一起太大.逐帧分析?不管时间维度.比如跑步录像.但如果两脚都着地?可能误判.maxpool?抹去序关系反而不正确.
+
+3D CNN?将时间视作第三个空间维度.但问题在于:这对感受野的要求比较大.在视频当中,一件事情的效应可能在相当长的时间之后才能体现,但CNN也不可能cover任意长的时间序列.也就是说,在视频处理当中,空间范围和时间范围地位并不对等.
+
+early fusion:所有信息在第一步混在一区提取.3D CNN在各个维度感受野的增长比较均匀.
+
+C3D: The VGG of 3D CNNs.第一次pool没有在时间维上处理,不希望提取得太早.
+
+3d的kernel size比较敏感,$5^3 > 11^2$.移动多了一个维度,计算代价更大.得益于其网络的精良设计,C3D的 sports-1m 的top5 acc还是达到了84\%.
+
+人类识别运动的关键:Motion,不是pixel.
+
+Use Both Motion and appearance: two-stream fusion network.它使用经典算法获得flow输入神经网络.神经网络分为两支,一支做空间,一支做时间.时间(flow)这一支使用了early fusion,因为相对于RGB,光流的信息已经比较清晰.
+
+Modeling Long-Term Temporal Structure.我们希望处理序列,RNN如何? aggregation(聚合).
+
+CNN和RNN一起训练计算代价太大\marginpar{\kaishu 原来RNN是独立的网络吗?}.因此先train CNN,不向其传递梯度,只训练RNN.但这样CNN与RNN可能优化目标不同.
+
+end to end training:端到端训练.所有optimization variable同时被优化.
+
+Recurrent convolutional Network.
