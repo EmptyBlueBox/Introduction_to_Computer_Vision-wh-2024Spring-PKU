@@ -20,7 +20,7 @@ experiments
 *.ps
 *.toc
 *.out
-# notes/src
+*.pdf
 
 homework-3
 往年题
