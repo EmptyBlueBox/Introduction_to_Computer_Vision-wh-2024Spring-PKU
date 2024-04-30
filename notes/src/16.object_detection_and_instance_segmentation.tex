@@ -88,7 +88,7 @@ Faster R-CNN引入Anchor box的概念.在Fast R-CNN中,我们已经得到了feat
     \label{fig:rcnn_speed}
 \end{wrapfigure}
 
-当然,Faster R-CNN之中还有非常多的细节,比如anchor如何取定,如何确定训练RPN的positive/negative samples,如何参数化bbox回归的过程等,限于篇幅限制无法一一展开,读者可参考\cite{FasterRCNNzh=cn}.
+当然,Faster R-CNN之中还有非常多的细节,比如anchor如何取定,如何确定训练RPN的positive/negative samples,如何参数化bbox回归的过程等,限于篇幅限制无法一一展开,读者可参考\cite{FasterRCNN}.
 
 Faster R-CNN中包含了四种loss:RPN对是否是物体的二分loss,RPN regress box loss, final classification score, final box coordinates, 调参的过程自然是非常复杂的,但是网络的效果也是显而易见的(如图 \ref{fig:rcnn_speed}).Faster R-CNN的出现,使得目标检测不再是学术界的toy model, 而是真正进入了实用领域,促进了安保等行业的发展.
 

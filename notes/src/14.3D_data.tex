@@ -76,14 +76,19 @@ CD对于取样情况不太敏感,而EMD则比较敏感.比如同样对于Stanfor
 \subsection{CD vs EMD}
 
 区别在于 CD 对于采样不敏感,而 EMD 对于采样敏感.
+
 同时EMD需要两个点云点的数量相同.
 
 也就是如果mesh一样但是sample不一样,那么EMD会很大
 
-\subsection{Implicit Shape}
+\subsection{Implicit Representation}
 
-另一种表示3D数据的方法是隐式表达,即SDF(signed distance function).
+对于一个点,使用一个关于这个点的函数的值来表示这个点是否在物体表面
+
+具体的表示方法是隐式表达,即SDF(signed distance function)
+
 简单地说,这个函数表示空间中点到物体表面的距离,内部为负,外部为正.
+
 其数学定义为:设$\Omega$为度量空间$X$的子集,$d$为$X$的度量,则SDF定义为
 
 \begin{equation}
@@ -93,14 +98,73 @@ CD对于取样情况不太敏感,而EMD则比较敏感.比如同样对于Stanfor
         d(x, \partial \Omega) & \text { if } x \in \Omega^{c}
     \end{cases}
 \end{equation}
+
 其中$d(x, \partial \Omega) \xlongequal{\text{def}} \inf_{y \in \partial \Omega} d(x, y)$.
 
-另外,SDF还满足Eikonel equation,即
+SDF的用处:
+
+\begin{enumerate}
+    \item \textbf{collision check:}如果一个东西跟另外一个东西的碰撞。
+    那么其中物体A它上面的所有点到底有没有碰到物体B呢？
+    我们就可以通过query所有点在B的物体的SDF里头它的值是多少。如果都是大于0，说明A和B没有碰撞
+    \item 使用神经网络把物体的几何通过SDF的方式存储下来
+\end{enumerate}
+
+\subsubsection{mesh to SDF}
+
+在处理Mesh到Signed Distance Field (SDF)的转换时,首先需要一些坐标点,
+基于这些点的距离值,可以尝试开发算法来计算对应的SDF值
+
+\paragraph{Calculate Unsigned Distance}
+在几何处理中,一种基础的方法是计算点到表面的距离 (Unsigned Distance),不区分点是在物体内部还是外部.
+这可以通过将所有三角面视为平面,对于每个点,计算其到每个三角面的垂线距离.如果垂足不在三角面上,
+则该距离不是最短距离;如果垂足位于三角面上,则从这些距离中找出最短的,即为该点到表面的最短距离.
+
+\paragraph{Unsigned Distance to Signed Distance}
+要将Unsigned Distance转换为Signed Distance,使用等高线将空间中的点进行分层表示.
+这些等高线描绘了在某些区域距离先减小然后增加,其中距离最近的点附近的区域距离为零,
+利用距离为零的区域判断点是在物体的内部还是外部.
+
+\subsubsection{SDF to mesh}
+
+使用 marching cube
+
+\begin{enumerate}
+    \item 离散化
+    \item 二值化
+    \item 使用look-up table找轮廓
+    \item 使用线性插值优化轮廓
+\end{enumerate}
+
+在第三步,很多case都会有这种ambiguity,需要根据周围的mesh二次优化,决定ambuguity的位置,对于三维mesh重建,这个问题更加严重.
+
+\subsection{Deep SDF}
+
+两个trick:
+
+1. 如何分布训练数据点: 如果这个神经网络SDF最终需要使用marching cube,那么应该在SDF为0附近采样
+
+2. 训练loss的设置,可以加入一个优化:让SDF的梯度为1.这样可以让SDF更加smooth
+
+SDF还满足Eikonel equation,即
+
 \begin{equation}
     \norm{\nabla F} = 1.
 \end{equation}
+
 这点不难理解,因为沿与距离最短的点的连线方向的方向导数之模为$1$,而函数本身即表达距离,
 不可能只前进一个单位的长度,距离变化超过一单位,因此这也是最大值.
 
-implicit representation的形式非常具有潜力,因为它可以很容易地与神经网络结合.
-因此我们下一个主题就是 3D的Deep learning.
+\subsubsection{Deep SDF}
+
+将不同的SDF关联起来,并且保证连续性\cite{Park2019CVPR}
+
+\begin{enumerate}
+    \item  use the network to overfit a single shape
+    \item use a latent code to represent a shape, so that the
+    network can be used for multiple shapes
+\end{enumerate}
+
+\subsection{NeRF, 3DGS, Convolution on Mesh/Graph}
+
+了解即可
