@@ -7,4 +7,4 @@ xelatex CV_notes.tex
 xelatex CV_notes.tex
 ```
 
-Until catalogs is integrated.
+Until catalogs are integrated.
