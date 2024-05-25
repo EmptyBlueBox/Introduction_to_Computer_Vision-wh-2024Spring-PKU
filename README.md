@@ -2,6 +2,8 @@
 
 This is a repo for Introduction to Computer Vision course in Peking University, 2024 Spring, by Prof. Wang He.
 
+Welcome to my website [Introduction to Computer Vision](https://lyt0112.com/posts/course/intro_to_CV)
+
 1. Slides (not available, Copyright belongs to Professor Wang He of Peking University.)
 2. Course notes (marked on course materials, not available, Copyright belongs to Professor Wang He of Peking University.)
 3. Course notes (Latex)
