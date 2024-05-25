@@ -1,3 +1,8 @@
+# tmp
+homework-4
+往年题
+
+# Byte-compiled / optimized / DLL files
 **/.DS_Store
 **/.vscode
 
@@ -22,8 +27,6 @@ experiments
 *.toc
 *.out
 *.pdf
-
-往年题
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
