@@ -12,5 +12,5 @@ Welcome to my website [Introduction to Computer Vision](https://lyt0112.com/post
    3. To avoid the .git file from being too large, I upload the CV notes to PKU Disk: 
       [CV_notes](https://disk.pku.edu.cn/link/AA03F6F13A93B84EA8B3D42B3F13590A17) 
 4. Labs
-5. cheatsheet
+5. Cheatsheet
    1. referenced from https://github.com/PkuCuipy/icv-assignments
