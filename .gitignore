@@ -1,5 +1,4 @@
 # tmp
-homework-4
 往年题
 
 # Byte-compiled / optimized / DLL files
@@ -10,6 +9,8 @@ slides/*.pdf
 
 cifar-10-batches-py
 experiments
+datasets
+shapenetcore_partanno_segmentation_benchmark_v0
 
 *.aux
 *.log
