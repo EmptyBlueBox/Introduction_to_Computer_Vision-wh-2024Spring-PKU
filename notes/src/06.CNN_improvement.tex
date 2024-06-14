@@ -119,7 +119,8 @@ BatchNorm通常位于FC层或Conv层之后,非线性层之前.它有如下的优
 
 右一是由何恺明等人提出的GroupNorm,它将channel分组进行计算,相当于对图2和图3进行了插值.
 
-\begin{figure}{H}
+\begin{figure}[H]
+	\centering
 	\includegraphics[scale=0.30]{figures/GroupNorm.png}
 	\caption{classification error vs batch sizes}
 	\label{groupNorm}

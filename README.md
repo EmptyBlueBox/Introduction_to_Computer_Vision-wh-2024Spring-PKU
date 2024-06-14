@@ -8,7 +8,7 @@ Welcome to my website [Introduction to Computer Vision](https://lyt0112.com/post
 3. Course notes (Latex)
    1. This note was originally completed by 林晓疏 (pen name) during class in the spring semester of 2022
    2. I have adapted this to the latest course content for the Spring 2024 semester and added the latest content
-   3. All notes are completed, you can get compiled `.pdf` file from `./notes/CV_notes.pdf`
+   3. You can get a compiled `.pdf` file from `./notes/CV_notes.pdf`
 4. Labs
 5. Cheatsheets
    1. referenced from https://github.com/PkuCuipy/icv-assignments
