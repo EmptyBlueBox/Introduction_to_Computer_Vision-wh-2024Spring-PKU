@@ -1,20 +1,22 @@
 \section{3D data}
 
-from sensor or graphics.
+From sensor or graphics.
 
-第三种sensor:time-of-light.即用光的传播时间计算深度.两种:iToF and dToF.direct or indirect.前者使用脉冲波,后者计算光的相位差.
+第三种sensor:time-of-light.即用光的传播时间计算距离, 具体两种:
 
-dToF精度高,但对器件要求高,需要使用SPAD(单光子雪崩二极管),无法做得很密集,造价高.iToF精度低(误差与距离成正比),但造价更低.
+\begin{enumerate}
+    \item iToF: indirect Time of Flight. 通过光的传播时间计算距离, 精度低(误差与距离成正比), 但造价低.
+    \item dToF: direct Time of Flight. 通过光的相位差计算距离, 精度高, 但对器件要求高, 需要使用SPAD(单光子雪崩二极管), 无法做得很密集, 造价高.
+\end{enumerate}
 
-multiple 3D representation:
+Multiple 3D representation:
 
-multiview images.从各个视角获得的多张图片.它包含3D信息,indirect,not a true 3D representation.
-
-depth image.只知道深度,不知道相机内参,无法确定两个点的距离.因此被称为2.5D.
-
-Voxels.物体占据了位置则设为1.能被index.但是非常昂贵.$O(n^3)$.没有表面的表示.一旦分辨率低,则无法还原丢失的信息.
-
-Irregular 3D representation. Mesh,point Cloud, Implicit representation.
+\begin{enumerate}
+    \item multiple images.从各个视角获得的多张图片.它包含3D信息,indirect,not a true 3D representation.
+    \item depth image.只知道深度,不知道相机内参,无法确定两个点的距离.因此被称为2.5D.
+    \item Voxels.物体占据了位置则设为1.能被index.但是非常昂贵.$O(n^3)$.没有表面的表示.一旦分辨率低,则无法还原丢失的信息.
+    \item Irregular 3D representation. Mesh,point Cloud, Implicit representation.
+\end{enumerate}
 
 \subsection{Mesh}
 
@@ -42,10 +44,10 @@ Point cloud是一个$3n$级别的存储方式,当然也可以添加其他分量.
 
 \textbf{Sampling Strategy:Uniform Sampling.}
 计算每个表面的面积,以面积为权独立同分布地选取三角形.在三角形里如何均匀选取呢?仿射变换形成直角三角形,再拼接成矩形.
-\footnote{2022笔者内心OS:直接拼接成平行四边形如何?2024笔者注:对三角形均匀采样可以在正方形 (平行四边形)中采样然后对角线截半.}
+\footnote{直接拼接成平行四边形如何?对三角形均匀采样可以在正方形 (平行四边形)中采样然后对角线截半.}
 
 但是这样取样之后,在取样量不算非常大的时候,经常会出现不太均匀的情形.此时我们可以采用Farthest Point Sampling(FPS).
-目标是选取$N$个点使其两两距离求和最大.但这是一个$\mathcal{NP}$hard的问题.我们采取一个近似的贪心算法.
+目标是选取$N$个点使其两两距离求和最大.但这是一个$\mathcal{NP}$-hard的问题.我们采取一个近似的贪心算法.
 我们先均匀选取10000个点.在这10000个点最远的1024个点成为组合优化问题.但仍然比较困难.我们先确定一个点,
 最后依次选取最远的点.我们也只是希望点云看起来比较均匀,因此没必要一定取得数学上的最优解.
 
@@ -53,6 +55,7 @@ Point cloud是一个$3n$级别的存储方式,当然也可以添加其他分量.
 我们希望找到一个permutation invariant的度量:Chamfer distance.
 \footnote{在某些文献当中,式 \ref{eq:chamfer distance}有时也会带平方.
 但是如果带平方,则三角不等式不成立.}
+
 \begin{equation}
     d_{CD} = \sum_{x \in S_1} \min_{y \in S_2} \norm{x - y}_{2} + \sum_{y \in S_2} \min_{x \in S_1} \norm{x - y}_{2}
     \label{eq:chamfer distance}
@@ -60,7 +63,7 @@ Point cloud是一个$3n$级别的存储方式,当然也可以添加其他分量.
 
 对于每个单项,称为uni chamfer distance.在一个点云是另一个子集的时候有用.
 
-另一个度量是Earth Mover's distance\footnote{在WGAN中使用.2024笔者注.}.与CD不同的是,它要求两个点云数量相同,
+另一个度量是Earth Mover's distance\footnote{在WGAN中使用.}.与CD不同的是,它要求两个点云数量相同,
 且每个点必须找到互不重复的对应.\footnote{Earthmover,中文直译为推土机.
 EMD距离用于衡量(在某一特征空间下)两个多维分布之间的dissimilarity,它
 的计算基于著名的运输问题.但是精确求解EMD亦非易事,调用的package也多为近似算法.}
@@ -129,6 +132,21 @@ SDF的用处:
 
 使用 marching cube
 
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{figures/marching_cube1.png}
+    \end{subfigure}
+    \vspace{1em} % 调整两个子图之间的垂直间距
+    \begin{subfigure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{figures/marching_cube2.png}
+    \end{subfigure}
+    \caption{Marching cube pipelines}
+    \label{fig:marching_cube}
+\end{figure}
+
 \begin{enumerate}
     \item 离散化
     \item 二值化
@@ -136,15 +154,22 @@ SDF的用处:
     \item 使用线性插值优化轮廓
 \end{enumerate}
 
-在第三步,很多case都会有这种ambiguity,需要根据周围的mesh二次优化,决定ambuguity的位置,对于三维mesh重建,这个问题更加严重.
+在第三步,很多case都会有这种ambiguity, 如图\ref{fig:mesh reconstruction},所以还需要根据周围的mesh二次优化,决定ambuguity的位置,对于三维mesh重建,这个问题更加严重.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/holes.png}
+    \caption{Problem in mesh reconstruction}
+    \label{fig:mesh reconstruction}
+\end{figure}
 
 \subsection{Deep SDF}
 
 两个trick:
 
-1. 如何分布训练数据点: 如果这个神经网络SDF最终需要使用marching cube,那么应该在SDF为0附近采样
+1. 如何分布训练数据点: 如果这个神经网络SDF最终需要使用marching cube,那么应该在SDF为0附近多多采样
 
-2. 训练loss的设置,可以加入一个优化:让SDF的梯度为1.这样可以让SDF更加smooth
+2. 训练loss的设置,可以加入一个约束优化:让SDF的梯度为1.这样可以让SDF更加smooth
 
 SDF还满足Eikonel equation,即
 
@@ -152,8 +177,8 @@ SDF还满足Eikonel equation,即
     \norm{\nabla F} = 1.
 \end{equation}
 
-这点不难理解,因为沿与距离最短的点的连线方向的方向导数之模为$1$,而函数本身即表达距离,
-不可能只前进一个单位的长度,距离变化超过一单位,因此这也是最大值.
+这点不难理解,因为沿与距离最短的点的连线方向的方向导数之模为$1$,而函数本身即表达最短距离, 也就是场变化最快的方向,
+不可能沿着梯度前进一个单位的长度,距离变化却超过一单位,因此这也是最大值.
 
 \subsubsection{Deep SDF}
 

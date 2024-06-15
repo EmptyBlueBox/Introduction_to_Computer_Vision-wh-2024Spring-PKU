@@ -62,7 +62,7 @@
 	
 	\begin{figure}[htbp]
 		\centering
-		\includegraphics[scale=0.35]{figures/vanilla_rnn.png}
+		\includegraphics[scale=0.2]{figures/vanilla_rnn.png}
 		\caption{Vanilla RNN Computational Graph}
 	\end{figure}
 	
@@ -70,7 +70,7 @@
 
 	\begin{figure}[htbp]
 		\centering
-		\includegraphics[scale=0.3]{figures/word_model.png}
+		\includegraphics[scale=0.2]{figures/word_model.png}
 		\caption{Characer-Level Language Model}
 	\end{figure}
 
@@ -81,7 +81,7 @@
 
 	\begin{figure}[htbp]
 		\centering
-		\includegraphics[scale=0.3]{figures/truncate_bp.png}
+		\includegraphics[scale=0.2]{figures/truncate_bp.png}
 		\caption{Truncated BP}
 	\end{figure}
 	
@@ -90,30 +90,29 @@
 	这个window length是sequence length
 
 	\subsubsection{Why share weight?} 
-	Just like the CNN, we want the word features to be equalvariant. 
-	Same sentence, different position in the article, should have the same feature.
+	就像CNN一样，我们希望词特征是等变的。同一句话，在文章中的不同位置，应该具有相同的特征。
 
 	\subsubsection{Different Sampling Strategies}
 	\begin{itemize}
-		\item Greedy sampling: always takes the highest prob.
+		\item Greedy sampling: 总是取最高概率的token
 		
-		Issue: deterministic, can only generate one sequence given
-		the initial token and hidden states.
-		\item Weighted sampling: sample the next token according to the
-		predicted probability distribution
+		问题：确定性，只能在给定初始标记和隐藏状态的情况下生成一个序列
+
+		\item Weighted sampling: 根据预测的概率分布采样下一个标记
 		
-		Advantage: can generate diverse sequences.
+		优点：可以生成多样的序列
 		
-		Issue: can accidentally obtain wrong token and screw up the
-		generation.
+		问题：可能会意外获得错误的标记并造成生成过程的错误
+		
 		\item Exhaustive Search
 		\[
 		\begin{aligned}P(y|x)&=P(y_1|x)P(y_2|y_1,x)P(y_3|y_1,y_2,x)\ldots,P(y_T|y_1,\ldots,y_{T-1},x)\\&=\prod_{t=1}^TP(y_t|y_1,\ldots,y_{t-1},x)\end{aligned}
 		\]
-		\item Beam Search: top K most likely, next time, select K from KV results.
+
+		\item Beam Search: 最有可能的前K个，下次从KV结果中选择K个最有可能的
 	\end{itemize}
 	
-	实际上将h和x结合的时候,常常先将x进行embedding, W [h,x]->W [h, g (x)].
+	实际上将h和x结合的时候,常常先将x进行embedding, W(h,x) $\rightarrow$ W(h, g(x)).
 	比如,hidden layer可能之后512维,但是输入如果是词向量,那么可能有几万维,
 	非常不均衡.因此将embedding到合适的维度.此外,word embedding已经有现成的处理.
 	
@@ -121,17 +120,17 @@
 	
 	\subsection{RNN tradeoff}
 	\begin{itemize}
-		\item RNN Advantages:
+		\item RNN 优点:
 		\begin {itemize}
-			\item Can process any length input
-			\item Computation for step t can (in theory) use information from many steps back
-			\item Model size doesn't increase for longer input
-			\item Same weights applied on every timestep, so there is symmetry in how inputs are processed.
+			\item 可以处理任何长度的输入
+			\item 步骤 t 的计算（理论上）可以使用许多步之前的信息
+			\item 模型大小不会因输入更长而增加
+			\item 在每个时间步上应用相同的权重，因此输入处理方式具有对称性
 		\end{itemize}
-		\item RNN Disadvantages:
+		\item RNN 缺点:
 		\begin{itemize}
-			\item Recurrent computation is slow
-			\item In practice, difficult to access information from many steps back
+			\item 循环计算很慢
+			\item 在实践中，很难从许多步骤前获取信息
 		\end{itemize}
 	\end{itemize}
 
@@ -170,15 +169,17 @@
 		\frac{\partial L_T}{\partial W}=\frac{\partial L_T}{\partial h_T}\frac{\partial h_t}{\partial h_{t-1}}\ldots\frac{\partial h_1}{\partial W}=\frac{\partial L_T}{\partial h_T}(\prod_{t=2}^T\frac{\partial h_t}{\partial h_{t-1}})\frac{\partial h_1}{\partial W}	
 	\]
 
-	Gradient signal from far away is lost because it's much smaller than 
-	gradient signal from close-by.
-
-	Model weights are updated only with respect to near effects, not 
-	long-term effects.
+	远处的梯度信号丢失了, 因为它比近处的梯度信号小得多, 模型权重仅针对近期进行更新, 而非长期
 	
 	\textbf{gradient clipping}对于exploding grad有一定作用, 但是解决不了 vanishing gradient 的问题.必须Change RNN architecture
 	
 	\subsection{LSTM}
+
+	\begin{figure}[H]
+		\centering
+		\includegraphics[scale=0.2]{figures/lstm_grad_flow.png}
+		\caption{LSTM Gradient Flow}
+	\end{figure}
 
 	\[
 	\begin{aligned}
@@ -188,21 +189,17 @@
 	\end{aligned}
 	\]
 
-	i: Input gate, whether to write to cell
-	f: Foraet gate. Whether to erase cell
-	o: Output gate, How much to reveal cell
-	g: Gate gate (?), How much to write to cell
+	\begin{itemize}
+		\item i: Input gate, Whether to write to cell
+		\item f: Forget gate. Whether to erase cell
+		\item o: Output gate, How much to reveal cell
+		\item g: Gate gate (?), How much to write to cell
+	\end{itemize}
 	
 	cell state是long-term memory.我们知道对于普通的tanh,往01之间映射,那么$h_t$和很早之前的$h_i$之间的联系就比较微弱了.
 	而LSTM中的c则一直把信息保留(f也是经过sigmoid激活的,在01之间,可以选择记住或者遗忘),最后h将c进行处理.
 	
 	核心结构:old info和new info的加和.若f=1,则就是skiplink.换言之c之间有梯度的旁路.
-
-	\begin{figure}[htbp]
-		\centering
-		\includegraphics[scale=0.35]{figures/lstm_grad_flow.png}
-		\caption{LSTM Gradient Flow}
-	\end{figure}
 
 	因为c是旁路,梯度可以直接流过来
 
