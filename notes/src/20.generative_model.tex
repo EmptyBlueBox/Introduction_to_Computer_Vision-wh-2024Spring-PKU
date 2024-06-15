@@ -242,7 +242,11 @@
 
 	\textbf{为什么使用高斯分布?}
 	
-	方便sample, 尤其是重参数化trick和KL散度是有解析解的.
+	\begin{enumerate}
+		\item 高斯分布简单,可以通过均值和方差完全描述
+		\item 高斯分布的KL散度有解析解, 满足线性性, 可以进行缩放方便地进行重参数化
+		\item 高斯分布的采样很容易
+	\end{enumerate}
 	
 	\textbf{这东西跟变分 (variational)究竟有什么关系?}
 	
@@ -279,8 +283,9 @@
 		\min _{\theta_{g}} \max _{\theta_{d}}\left[\mathbb{E}_{x \sim p_{d a t a}} \log D_{\theta_{d}}(x)+\mathbb{E}_{z \sim p(z)} \log \left(1-D_{\theta_{d}}\left(G_{\theta_{g}}(z)\right)\right)\right]
 	\end{equation}
 
-	交替训练.防止梯度相似?\marginpar{discriminator: 
-		\includegraphics[scale=0.28]{figures/ddgg.png}}
+	交替训练.防止梯度相似?
+	
+	\marginpar{discriminator: \includegraphics[scale=0.25]{figures/ddgg.png}}
 	
 	但是有一点值得注意:上式中$\log(1-x)$这一函数在$x$接近$0$时梯度非常小.
 	而训练之初,discriminator可以轻易辨别出generator生成的图片为假,
@@ -303,14 +308,14 @@
 	\min_{\theta_g}\mathbb{E}_{z\sim p(z)}\log(1-D_{\theta_d}(G_{\theta_g}(z)))	
 	\end{equation}
 
-	\textbf{为什么每一个 iteration 多次训练 Discriminator 但是只训练一次 Generator?}
+	\textbf{\\为什么每一个 iteration 多次训练 Discriminator 但是只训练一次 Generator?}
 
 	因为训练 Generator 的时候梯度要流过 Discriminator,如果 Discriminator 训练的次数太少,
 	Discriminator 找到的错误就不对, 因此 Generator 的梯度也不对, 会导致训练不稳定.
 
 	所以一个好老师很重要.
 
-	\textbf{GAN在单一分布上效果很好,但是在大规模数据集很差,为什么?}
+	\textbf{\\GAN在单一分布上效果很好,但是在大规模数据集很差,为什么?}
 
 	Mode chasing → Mode collapse: 生成器一直选择和输入一样的图片输出,
 	辨别器一直说这是假的,最后导致生成器生成的图片都是同样的,这就是模式崩塌.
@@ -319,7 +324,7 @@
 	
 	这个问题最后也没解决.
 
-	\textbf{Metrics}
+	\textbf{\\Metrics}
 
 	如何衡量网络的表现?很难有客观的度量.
 	

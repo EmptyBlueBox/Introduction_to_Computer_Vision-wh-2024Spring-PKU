@@ -59,4 +59,13 @@ PointNet++相当于卷积网络的先做 1*1 conv 然后 n*n MaxPooling,都是�
     那么卷积网络的结果会变,而PointNet++的结果不变,因为怎么变换位置都是取最大值.
 \end{enumerate}
 
-参数量: C*C' V.S. 3*3*3*C*C'
+参数量: $C\times C^\prime$ V.S. $3\times 3\times 3\times C\times C^\prime$
+
+\subsection{设计一个二维PointNet}
+
+如何设计一个二维的pointnet呢?
+
+我们可以将图片看作二维的点云, 对于每一个像素 $x_i$, 将其颜色或者透明度等信息看作是 $x_i$ 的三维坐标,然后使用pointnet的方法进行处理
+
+具体来讲, 图片维度为 $H\times W\times C$, 那么我们可以将其看作 $H\times W$ 个点, 每个点的特征是 $C$ 维的, 
+每一个像素通过相同的MLP映射到 $C^\prime$ 维, 然后进行maxpooling, 最终得到 $C^\prime$ 维的全局特征.

@@ -127,7 +127,7 @@ Fast RCNN仍然采用传统方法获得RoI,但是把Corp的时机放到了CNN之
 
 这样取得的RoI大小仍然不统一,原论文采用了一种max pooling的方法,
 将形式各异的RoI分割成合乎要求的子块,对每个子块求最大值,
-如图 \ref{fig:RoI_pooling}所示.图中为方便将最终的大小画成了2*2,实际上为7*7.
+如图 \ref{fig:RoI_pooling}所示.图中为方便将最终的大小画成了$2\times 2$,实际上为$7\times 7$.
 
 这样做的好处是
 
@@ -135,18 +135,22 @@ Fast RCNN仍然采用传统方法获得RoI,但是把Corp的时机放到了CNN之
 
 2. 因为最后特征图上的的RoI分辨率比较小,可以将多出来的RoI数量这一维度作为Batch的一部分,
 从而可以完全并行化.使用32bits浮点数计算,
-以每一个RoI对应的7*7*512的特征图为例,224的大小000个RoI,只需要不到200MB显存,
-但是RCNN中2000个RoI,224*224*3的原始图片,需要1GB多的显存.
+以每一个RoI对应的$7\times 7\times 512$的特征图为例,224个大小2000个RoI,只需要不到200MB显存,
+但是RCNN中2000个RoI,$224\times 224\times 3$的原始图片,需要1GB多的显存.
 
 Fast RCNN相比RCNN取得了可观的速度提升.
-如图,Fast RCNN的训练时间只有RCNN的约十分之一,且测试速度显著提高.
-右图红色为不包含传统方法获得RoI,仅对RoI进行处理的时间,可以看出Fast RCNN
-时间的限制在RoI的提出上了.
+
+下图中\ref{fig:rcnn_vs_frcnn}左图为训练的时间,
+Fast RCNN的训练时间只有RCNN的约十分之一.
+右图测试速度显著提高, 红色为不包含传统方法获得RoI,仅对RoI进行处理的时间,
+可以看出Fast RCNN
+时间的限制在RoI的提出上,不像RCNN,RCNN的瓶颈在于卷积网络的计算上.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[scale=0.65]{figures/rcnn_vs_frcnn.png}
     \caption{RCNN v.s. Fast RCNN}
+    \label{fig:rcnn_vs_frcnn}
 \end{figure}
 
 \subsection{Faster R-CNN}
@@ -172,9 +176,9 @@ Fast RCNN相比RCNN取得了可观的速度提升.
 在Fast R-CNN中,我们已经得到了feature map,
 而其中的每个pixel都可能作为不同形状的一个或多个物体的中心,因此我们可以
 让每个pixel都给出自己是否是一些不同形状的anchor的中心(如图 \ref{fig:anchor}所示)
-对于20*15*512的一张feature map得到20*15*K个概率值
+对于$20\times 15\times 512$的一张feature map得到20*15*K个概率值
 这些300K个概率中最高概率的300个RoI将被作为最终输送给下一步骤的proposal.
-所以第一步的batch size是图片数量, 第二步的batch size是图片数量*300.
+所以第一步的batch size是图片数量, 第二步的batch size是图片数量$\times$300.
 
 
 当然,这样会获得数千个乃至更多的bbox,而一张图片里一般并没有这么多,在第二步完成之后还要进行优化.
@@ -236,11 +240,16 @@ AP (Average Precision): Precision-Recall curve 下的面积
 假如我们有一张图,
 有20个ground truth bounding box,我们显然不可能要求其完全相符.
 我们可以定义一个IoU threshold.首先其输出的类别要对,其次IoU>threshold.
-另外一方面,如果我乱猜了5000张,显然也是不行的.trade-off between
-recall \& precision.因此提出度量:AP.即Average Precision.
-即precision-recall图像下的面积.它先选出某个种类,然后按照prob排序,
-逐个增加.这样precision下降,recall提升.mAP就是所有不同
-category and/or IoU threshold.
+另外一方面,如果我乱猜了5000张,显然也是不行的.
+
+Trade-off between
+recall \& precision.
+
+因此提出度量:AP.即Average Precision.
+即precision-recall图像下的面积, 这个图像的横轴是recall,纵轴是precision.
+
+如何画PR曲线? 先选出某个种类,
+逐渐降低IoU threshold,这样对于这一类的precision下降,recall提升, 就画出了PR曲线.
 
 AP at Different IoU Thres: 对于不同的IoU阈值,计算AP
 
@@ -260,9 +269,9 @@ YOLO.但目前这一领域,工业界已经占据了统治地位.
     \label{fig:YOLO}
 \end{figure}
 
-将图片分为S*S个格子(一般S为7),每个格子负责预测她为中心的B个base boxes和C类.
+将图片分为$S\times S$个格子(一般S为7),每个格子负责预测她为中心的B个base boxes和C类.
 
-所以输出为S*S*(B*5+C),其中5个值分别为:中心坐标,宽高,confidence.
+所以输出为$S\times S\times (B\times 5+C)$,其中5个值分别为:中心坐标,宽高,confidence,最后再加上C个类别的概率.
 
 \subsection{End-to-End Object Detection with Transformers (DETR)}
 
@@ -278,6 +287,7 @@ YOLO.但目前这一领域,工业界已经占据了统治地位.
 \subsection{考什么}
 
 1. Transformer和Attention
+
 2. NMS的过程, YOLO的metrics
 
 \subsection{Mask R-CNN}
@@ -307,7 +317,7 @@ Top-Down Approach:Mask R-CNN
 因此何恺明使用双线性插值进行处理,RoI align.
 
 Ablation Study on RoI:
-Align.AP at 75 提升比AP50还高,这是因为这样的方法对于高精度影响更大.
+AP75 提升比AP50高,这是因为这样的方法对于高精度影响更大.
 此外,加入align后,bounding box的表现也提升了, 这是因为RoI align后的特征更加精确.
 
 \textbf{为什么Class-Agnostic Masks更好?}
