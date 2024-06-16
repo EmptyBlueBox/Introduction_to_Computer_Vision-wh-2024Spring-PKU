@@ -216,11 +216,6 @@
 		\label{fig:simple_VAE}
 	\end{figure}
 
-	如图\ref{fig:simple_VAE}所示,我们可以将VAE简化为一个简单的网络结构:
-	令decoder的$\sigma = 1$,即协方差矩阵为单位阵.否则对于上面这一项,
-	网络可以通过一直增大方差的方式来减小loss,如果$\sigma = 1$,
-	损失函数就没有了分母,变为MSE.
-
 	第二项,也就是让网络输出的分布的接近真实的分布
 	(注意上式的$x$并不是网络输出,而是输入)
 	
@@ -239,6 +234,11 @@
 	\begin{equation}
 		\exp^{-\xk{\frac{x - \mu}{\sigma}}^2}
 	\end{equation}
+
+	所以如图\ref{fig:simple_VAE}所示,我们可以将VAE简化为一个简单的网络结构:
+	令decoder的$\sigma = 1$,即协方差矩阵为单位阵.否则对于上面这一项,
+	网络可以通过一直增大方差的方式来减小loss,如果$\sigma = 1$,
+	损失函数就没有了分母,变为MSE.
 
 	\textbf{为什么使用高斯分布?}
 	
