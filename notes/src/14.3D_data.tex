@@ -103,7 +103,7 @@ Point cloud是一个$3n$级别的存储方式,当然也可以添加其他分量.
     \label{eq:chamfer distance}
 \end{equation}
 
-对于每个单项,称为uni chamfer distance.在一个点云是另一个子集的时候有用.
+对于每个单项,称为uni chamfer distance.在一个点云是另一个子集的时候有用.并且这里似乎应该除以二才能和EMD进行比较.
 
 另一个度量是Earth Mover's distance\footnote{在WGAN中使用.}.与CD不同的是,它要求两个点云数量相同,
 且每个点必须找到互不重复的对应.\footnote{Earthmover,中文直译为推土机.
@@ -155,7 +155,7 @@ SDF的用处:
     \item 使用神经网络把物体的几何通过SDF的方式存储下来
 \end{enumerate}
 
-\subsubsection{mesh to SDF}
+\subsubsection{Mesh to SDF}
 
 在处理Mesh到Signed Distance Field (SDF)的转换时,首先需要一些坐标点,
 基于这些点的距离值,可以尝试开发算法来计算对应的SDF值
@@ -170,7 +170,7 @@ SDF的用处:
 这些等高线描绘了在某些区域距离先减小然后增加,其中距离最近的点附近的区域距离为零,
 利用距离为零的区域判断点是在物体的内部还是外部.
 
-\subsubsection{SDF to mesh}
+\subsubsection{SDF to Mesh}
 
 使用 marching cube
 
