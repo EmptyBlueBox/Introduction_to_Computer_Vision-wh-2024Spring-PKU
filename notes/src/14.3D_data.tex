@@ -1,19 +1,61 @@
-\section{3D data}
+\section{3D Data}
 
-From sensor or graphics.
+\subsection{Sensors}
 
-第三种sensor:time-of-light.即用光的传播时间计算距离, 具体两种:
+\textbf{\\第一种sensor:Depth Sensors}
+
+得到的是一个深度图, 但是深度图RGBD是2.5D的, 如果不知道相机内参,不能完全表示3D的信息
+
+\textbf{\\第二种sensor:Stereo Sensors}
+
+Pros:
 
 \begin{enumerate}
-    \item iToF: indirect Time of Flight. 通过光的传播时间计算距离, 精度低(误差与距离成正比), 但造价低.
-    \item dToF: direct Time of Flight. 通过光的相位差计算距离, 精度高, 但对器件要求高, 需要使用SPAD(单光子雪崩二极管), 无法做得很密集, 造价高.
+    \item Robust to the illumination of direct sunlight
+    \item Low implementation cost
 \end{enumerate}
 
-Multiple 3D representation:
+Cons:
 
 \begin{enumerate}
-    \item multiple images.从各个视角获得的多张图片.它包含3D信息,indirect,not a true 3D representation.
-    \item depth image.只知道深度,不知道相机内参,无法确定两个点的距离.因此被称为2.5D.
+    \item Finding correspondences along $\text{Image}_L$ and $\text{Image}_R$ is hard and erroneous
+\end{enumerate}
+
+可以升级为Active Stereo, 之前的双目相机是passive, 现在看看打光的主动识别, 在两个相机之外加入一个红外线发射器
+
+但是红外线主动 sensor 仅限于室内使用, 室外使用会受到阳光的干扰, 并且不能处理透明或者非漫反射的物体
+
+\textbf{\\第三种sensor:time-of-light}
+
+即用光的传播时间计算距离, 具体有如下两种
+
+dTOF(direct Time of Flight)
+\begin{enumerate}
+    \item 发射脉冲波, 通过光的传播时间计算距离, 被认为是比iTOF更好的方法
+    \item 理论上精度高, 但是现在分辨率还很低
+    \item 对器件要求高, 需要使用SPAD (单光子雪崩二极管), 无法做得很密集, 造价高
+\end{enumerate}
+
+iTOF(indirect Time of Flight)
+\begin{enumerate}
+    \item 发射正弦波,通过光的相位差计算距离
+    \item 精度低 (误差与距离成正比), 但是分辨率高
+    \item 造价低
+\end{enumerate}
+
+\textbf{Summary of Different Depth Sensors}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/sensors.png}
+    \caption{Summary of Different Depth Sensors}
+\end{figure}
+
+\subsection{Multiple 3D representation}
+
+\begin{enumerate}
+    \item Multiple images.从各个视角获得的多张图片.它包含3D信息,indirect,not a true 3D representation.
+    \item Depth image.只知道深度,不知道相机内参,无法确定两个点的距离.因此被称为2.5D.
     \item Voxels.物体占据了位置则设为1.能被index.但是非常昂贵.$O(n^3)$.没有表面的表示.一旦分辨率低,则无法还原丢失的信息.
     \item Irregular 3D representation. Mesh,point Cloud, Implicit representation.
 \end{enumerate}
@@ -179,8 +221,6 @@ SDF还满足Eikonel equation,即
 
 这点不难理解,因为沿与距离最短的点的连线方向的方向导数之模为$1$,而函数本身即表达最短距离, 也就是场变化最快的方向,
 不可能沿着梯度前进一个单位的长度,距离变化却超过一单位,因此这也是最大值.
-
-\subsubsection{Deep SDF}
 
 将不同的SDF关联起来,并且保证连续性\cite{Park2019CVPR}
 
