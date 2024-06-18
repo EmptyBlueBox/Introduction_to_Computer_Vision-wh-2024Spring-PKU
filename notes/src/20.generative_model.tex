@@ -296,16 +296,28 @@
 	
 	\textbf{Non-Saturating Loss functions}
 	
-	Gradient ascent on discriminator:
+	判别器梯度下降:
 	
 	\begin{equation}
 	\max_{\theta_d}\left[\mathbb{E}_{x\sim p_{data}}\log D_{\theta_d}(x)+\mathbb{E}_{z\sim p(z)}\log(1-D_{\theta_d}(G_{\theta_g}(z)))\right]
 	\end{equation}
 
-	Gradient descent on generator:
+	生成器梯度上升:
 
 	\begin{equation}
 	\min_{\theta_g}\mathbb{E}_{z\sim p(z)}\log(1-D_{\theta_d}(G_{\theta_g}(z)))	
+	\end{equation}
+
+	但是优化这个生成器目标函数效果不好, 因为 $\log(1-x)$ 这个函数在
+	接近0的地方梯度相对较小, 所以会导致刚开始优化的时候梯度很小, 优化效果不好.
+
+	所以可以进行凹凸性反转, 对生成器的目标函数进行改进, 使得生成器的
+	目标函数在刚开始优化的时候梯度更大, 优化效果更好. 于是就有了下面的目标函数:
+
+	生成器梯度下降:
+
+	\begin{equation}
+	\max_{\theta_g}\mathbb{E}_{z\sim p(z)}\log(D_{\theta_d}(G_{\theta_g}(z)))
 	\end{equation}
 
 	\textbf{\\为什么每一个 iteration 多次训练 Discriminator 但是只训练一次 Generator?}

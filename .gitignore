@@ -5,7 +5,7 @@
 **/.DS_Store
 **/.vscode
 
-slides/*.pdf
+*.pdf
 
 cifar-10-batches-py
 experiments
