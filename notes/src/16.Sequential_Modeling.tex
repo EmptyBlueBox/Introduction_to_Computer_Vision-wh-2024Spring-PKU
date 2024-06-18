@@ -12,7 +12,7 @@
 	
 	many-to-one:例如动作预测.
 	
-	many-to-many:例如video captioning, 或者 video captioning, 可以看作是沿着时间维度的 action segmentation.
+	many-to-many:例如video captioning, 或者 Video classification on frame level 可以看作是沿着时间维度的 action segmentation.
 
 	此外还有offline和online的处理.前者全部看完,后者边看边输出.
 	
@@ -20,9 +20,7 @@
 	
 	还有 recursive NN, 但是不常用
 
-	Key idea: RNNs have an "internal state" that is updated as a sequence is processed
-
-	这个输出就是 $h$, hidden state
+	Key point: RNNs有一个在处理序列时会更新的 hidden state, 就是 $h$
 
 	\begin{figure}[htbp]
 		\centering
@@ -66,7 +64,7 @@
 		\caption{Vanilla RNN Computational Graph}
 	\end{figure}
 	
-	\subsubsection{Characer-Level Language Model}
+	\textbf{\\Characer-Level Language Model}
 
 	\begin{figure}[htbp]
 		\centering
@@ -89,14 +87,16 @@
 
 	这个window length是sequence length
 
-	\subsubsection{Why share weight?} 
-	就像CNN一样，我们希望词特征是等变的。同一句话，在文章中的不同位置，应该具有相同的特征。
+	\textbf{\\Why share weight?} 
+	
+	就像CNN一样,我们希望词特征是等变的.同一句话,在文章中的不同位置,应该具有相同的特征.
 
-	\subsubsection{Different Sampling Strategies}
+	\textbf{\\Different Sampling Strategies}
+
 	\begin{itemize}
 		\item Greedy sampling: 总是取最高概率的token
 		
-		问题：确定性，只能在给定初始标记和隐藏状态的情况下生成一个序列
+		问题：确定性,只能在给定初始标记和隐藏状态的情况下生成一个序列
 
 		\item Weighted sampling: 根据预测的概率分布采样下一个标记
 		
@@ -109,28 +109,28 @@
 		\begin{aligned}P(y|x)&=P(y_1|x)P(y_2|y_1,x)P(y_3|y_1,y_2,x)\ldots,P(y_T|y_1,\ldots,y_{T-1},x)\\&=\prod_{t=1}^TP(y_t|y_1,\ldots,y_{t-1},x)\end{aligned}
 		\]
 
-		\item Beam Search: 最有可能的前K个，下次从KV结果中选择K个最有可能的
+		\item Beam Search: 最有可能的前K个,下次从KV结果中选择K个最有可能的
 	\end{itemize}
 	
 	实际上将h和x结合的时候,常常先将x进行embedding, W(h,x) $\rightarrow$ W(h, g(x)).
 	比如,hidden layer可能之后512维,但是输入如果是词向量,那么可能有几万维,
 	非常不均衡.因此将embedding到合适的维度.此外,word embedding已经有现成的处理.
 	
-	RNN在长程记忆里会出现问题.delta t一般被称为sequence length.如果过短则相关性不强,过长则cost过多.
+	RNN在长程记忆里会出现问题, $\Delta T$一般被称为sequence length,如果过短则相关性不强,过长则cost too much.
 	
 	\subsection{RNN tradeoff}
 	\begin{itemize}
 		\item RNN 优点:
 		\begin {itemize}
 			\item 可以处理任何长度的输入
-			\item 步骤 t 的计算（理论上）可以使用许多步之前的信息
+			\item 步骤 t 的计算(理论上)可以使用许多步之前的信息
 			\item 模型大小不会因输入更长而增加
-			\item 在每个时间步上应用相同的权重，因此输入处理方式具有对称性
+			\item 在每个时间步上应用相同的权重,因此输入处理方式是等变的
 		\end{itemize}
 		\item RNN 缺点:
 		\begin{itemize}
 			\item 循环计算很慢
-			\item 在实践中，很难从许多步骤前获取信息
+			\item 在实践中,很难从许多步骤前获取信息
 		\end{itemize}
 	\end{itemize}
 
@@ -203,7 +203,7 @@
 
 	因为c是旁路,梯度可以直接流过来
 
-	\subsubsection{Do LSTMs Solve the Vanishing Gradient Problem?}
+	\textbf{\\Do LSTMs Solve the Vanishing Gradient Problem?}
 
 	不能保证. 但是这种skip link的结构可以缓解这个问题.
 

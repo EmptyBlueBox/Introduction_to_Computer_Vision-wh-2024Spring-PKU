@@ -20,7 +20,7 @@
 如今分类问题的网络范式是Softmax classifier + cross-entropy loss.
 \footnote{对二分类问题,也可采用SVM loss.但是扩展的多分类SVM loss在如今已经极少使用了.}
 
-\subsubsection{SoftMax}
+\textbf{\\SoftMax}
 
 SoftMax就是一个${\mathbb R}^k \to {(0, 1)}^k$的映射.
 
@@ -57,8 +57,8 @@ SoftMax就是一个${\mathbb R}^k \to {(0, 1)}^k$的映射.
 
 \subsection{Cross Entrophy Loss V.S. Accuracy}
 
-1.CEL有可能已经降到了log2,acc仍是0.例子:$\Pr=[0.499,0.501]$，仍然输出错误答案,但是 $loss=\log2$ 很小
+1.CEL有可能已经降到了log2,acc仍是0.例子:$\Pr=[0.499,0.501]$,仍然输出错误答案,但是 $loss=\log2$ 很小
 
 2.$acc=100\%$的时候,CEL仍然可能是初始化的 $\log(N)$ , 同理举一个例子:$\Pr=[0.498,0.001,0.001]$
 
-综上所述,两者没有确定关系，训练一定要同时画两个曲线
+综上所述,两者没有确定关系,训练一定要同时画两个曲线

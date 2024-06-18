@@ -2,9 +2,9 @@
 
 \subsection{任务简介}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.55]{figures/cv_tasks.png}
+    \includegraphics[scale=0.4]{figures/cv_tasks.png}
     \caption{分类任务}
 \end{figure}
 
@@ -31,9 +31,9 @@ $x, y, w, h$,即bbox左上角的坐标和大小.\footnote{如果我们用八个�
 总的来说,单目标检测可以被划分成两个任务:(对图片的)\textbf{分类}和
 (对bbox)的\textbf{回归}.如下图:
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.55]{figures/single_obj_det.png}
+    \includegraphics[scale=0.4]{figures/single_obj_det.png}
     \caption{单目标检测的网络概念图}
 \end{figure}
 
@@ -56,10 +56,14 @@ MSE在接近收敛的时候,梯度也小,不容易越过, 同时MSE在较大的�
 Smooth L1 Loss:结合两者, 在较小的时候二次, 
 在较大的时候一次, 同时加入常系数以保证一阶和二阶连续.
 
-这是一个Multitask Loss,即分类loss和bounding box的loss之和,
-可能产生竞争.它们应该以何种比例叠加?比如分类的loss最大大概在$\log N$的量级,
-但是对bounding box来说,如果采用$L^2$,差5个pixel那就是25.而$e^{25}$
-是一个非常大的数字.即使loss的量级差不多,gradient的量级也不一定是相同的.
+这是一个Multitask Loss,即分类loss和bounding box的loss之和.
+
+这两个loss应该以何种比例叠加?比如分类的loss最大大概在$\log N$的量级,
+但是对bounding box来说,如果采用$L^2$,差5个pixel那就是25.而在这个损失函数中
+$
+\text{Loss} = \alpha \cdot \text{Softmax Loss} + \beta \cdot \exp(\text{L2 Loss})
+$
+,$e^{25}$是一个非常大的数字.所以即使loss的量级差不多,gradient的量级也不一定是相同的.
 
 除此之外,这个网络还有一个特殊性质:对于不同图片,可能需要不同数量的输出.
 这在以前的Neural Network是无法做到的.
@@ -74,7 +78,7 @@ Smooth L1 Loss:结合两者, 在较小的时候二次,
 
 第一个深度学习的相关工作\cite{RCNN}:R-CNN (Region-based CNN).
 
-它的大致流程是:先提出一些proposal,统一变换到224*224的大小,
+它的大致流程是:先提出一些proposal,统一变换到 $224\times 224$ 的大小,
 然后通过SVM进行分类,以及对bbox的回归,
 回归的输出是$(dx, dy, dh, dw)$,即bbox应该进行的调整.
 
@@ -86,20 +90,22 @@ Smooth L1 Loss:结合两者, 在较小的时候二次,
 
 训练时我们会有很多的RoI,但ground truth (后文简写成gt)的数量显然要少得多.
 那么如何确定一个RoI被分成哪一类,以及向哪个gt进行回归呢?
+
 首先,如果一个bbox与任何一个gt的交都小于某一阈值,那么就将它单独分类成background,
 此时我们不再关心其regression的情况;如果一个bbox同时包含了多个gt,
 那么可以计算它与这些gt的IoU,将IoU最大的那个gt作为其分类和回归的对象.
+
 这里要注意的是,我们不关注background的回归是必须采取的行为,
 因为如果要监督一个background的回归,那么它的loss是非常大的,会直接破坏其他RoI的训练.
 
 做 research 一定要着眼于已有工作的不足,尤其是可以一眼看出来的问题.
 
 这个工作的两个问题:
-
-1. 首先proposal可能太多了,在测试时速度太慢.
-
-2. 其次若给出的RoI比物体小,将其Crop之后的部分无法获知周围的信息,
-几乎不可能准确对bbox进行回归.
+\begin{itemize}
+    \item 首先proposal可能太多了,在测试时速度太慢.
+    \item 其次若给出的RoI比物体小,将其Crop之后的部分无法获知周围的信息,
+    几乎不可能准确对bbox进行回归.
+\end{itemize}
 
 \subsection{Fast R-CNN}
 
@@ -131,20 +137,21 @@ Fast RCNN仍然采用传统方法获得RoI,但是把Corp的时机放到了CNN之
 
 这样做的好处是
 
-1. 经过conv后,感受野也增大了,也就不会产生上文提到的被裁剪而缺少上下文的问题了
-
-2. 因为最后特征图上的的RoI分辨率比较小,可以将多出来的RoI数量这一维度作为Batch的一部分,
-从而可以完全并行化.使用32bits浮点数计算,
-以每一个RoI对应的$7\times 7\times 512$的特征图为例,224个大小2000个RoI,只需要不到200MB显存,
-但是RCNN中2000个RoI,$224\times 224\times 3$的原始图片,需要1GB多的显存.
+\begin{itemize}
+    \item 经过conv后,感受野也增大了,也就不会产生上文提到的被裁剪而缺少上下文的问题了
+    \item 因为最后特征图上的的RoI分辨率比较小,可以将多出来的RoI数量这一维度作为Batch的一部分,从而可以完全并行化.
+    使用32bits浮点数计算,以每一个RoI对应的$7\times 7\times 512$的特征图为例,2000个RoI,只需要191MB显存,
+    但是RCNN中2000个RoI,$224\times 224\times 3$的原始图片,需要1148MB的显存.
+\end{itemize}
 
 Fast RCNN相比RCNN取得了可观的速度提升.
 
 下图中\ref{fig:rcnn_vs_frcnn}左图为训练的时间,
 Fast RCNN的训练时间只有RCNN的约十分之一.
-右图测试速度显著提高, 红色为不包含传统方法获得RoI,仅对RoI进行处理的时间,
+右图测试速度显著提高, 蓝色为总时间,
+红色为不包含传统方法获得RoI,仅对RoI进行处理的时间,
 可以看出Fast RCNN
-时间的限制在RoI的提出上,不像RCNN,RCNN的瓶颈在于卷积网络的计算上.
+时间的限制在RoI的提出上,不像RCNN的瓶颈在于卷积网络的计算上.
 
 \begin{figure}[htbp]
     \centering
@@ -155,7 +162,7 @@ Fast RCNN的训练时间只有RCNN的约十分之一.
 
 \subsection{Faster R-CNN}
 
-经过R-CNN和Fast R-CNN的积淀，Ross B. Girshick在2016年提出了新的Faster RCNN.
+经过R-CNN和Fast R-CNN的积淀,Ross B. Girshick在2016年提出了新的Faster RCNN.
 
 在结构上,Faster RCNN已经将特征抽取(feature extraction),proposal提取
 都整合在了一个网络中,使得综合性能有较大提高,在检测速度方面尤为明显.
@@ -176,16 +183,17 @@ Fast RCNN的训练时间只有RCNN的约十分之一.
 在Fast R-CNN中,我们已经得到了feature map,
 而其中的每个pixel都可能作为不同形状的一个或多个物体的中心,因此我们可以
 让每个pixel都给出自己是否是一些不同形状的anchor的中心(如图 \ref{fig:anchor}所示)
-对于$20\times 15\times 512$的一张feature map得到20*15*K个概率值
+
+对于$20\times 15\times 512$的一张feature map,得到 $20\times 15\times K$个概率值,
 这些300K个概率中最高概率的300个RoI将被作为最终输送给下一步骤的proposal.
 所以第一步的batch size是图片数量, 第二步的batch size是图片数量$\times$300.
 
 
-当然,这样会获得数千个乃至更多的bbox,而一张图片里一般并没有这么多,在第二步完成之后还要进行优化.
+当然,这样会获得数千个乃至更多的bbox,而图片里一般并没有这么多,在第二步完成之后还要进行优化.
 
-1. 对于每个proposal,如果它在所有类上最高的概率小于某个阈值,则直接舍弃.
-
-2. NMS.先将这些bbox进行分类预测,
+\begin{itemize}
+    \item 对于每个proposal,如果它在所有类上最高的概率小于某个阈值,则直接舍弃.
+    \item NMS.先将这些bbox进行分类预测,
 按照它们的分类进行分组,随后对每个类型的分组内取分类概率最高的RoI,
 将同组之内和它IoU大于某个threshold的RoI全部去除.
 这样做的原理是将某一类别概率最高的作为标准,与其IoU较大的则认为是圈出了同一个物体,
@@ -197,6 +205,7 @@ Fast RCNN的训练时间只有RCNN的约十分之一.
 比如有一个和它非常接近的RoI因为某种原因识别为狗,那么这样做就不能去除这样的RoI,
 因为此处NMS只对同类的RoI进行操作.后来也有工作同时预测RoI与IoU(即"预测的预测"),
 并证明这样做效果更优.}
+\end{itemize}
 
 \begin{wrapfigure}{r}{6cm}
     \includegraphics[scale=0.4]{figures/rcnn_speed_comparison.png}
@@ -242,21 +251,23 @@ AP (Average Precision): Precision-Recall curve 下的面积
 我们可以定义一个IoU threshold.首先其输出的类别要对,其次IoU>threshold.
 另外一方面,如果我乱猜了5000张,显然也是不行的.
 
-Trade-off between
-recall \& precision.
+Trade-off between recall \& precision.
 
-因此提出度量:AP.即Average Precision.
-即precision-recall图像下的面积, 这个图像的横轴是recall,纵轴是precision.
+画PR曲线:先选出某个种类,
+逐渐降低\textbf{置信度阈值},这样对于这一类的precision下降, recall提升, 
+画在一个横轴是recall,纵轴是precision的二维坐标系上,就画出了PR曲线.
 
-如何画PR曲线? 先选出某个种类,
-逐渐降低IoU threshold,这样对于这一类的precision下降,recall提升, 就画出了PR曲线.
+AP: Average Precision, 即PR曲线下的积分面积.
 
-AP at Different IoU Thres: 对于不同的IoU阈值,计算AP
+AP at Different IoU Threshold: 对于不同的IoU阈值,计算AP.
 
-mAP: 对于不同的 IoU Thres OR/AND 类别,计算AP,然后取平均
+mAP: 对于不同的 \textbf{IoU 阈值} OR/AND \textbf{类别},计算AP,然后取平均.
+只对类别取平均的mAP可以记作mAP@IoU,比如mAP@0.5就是以0.5为IoU阈值的mAP.
+mAP对不同的IoU阈值取平均可以记作mAP@[IoU1:IoU2],例如mAP@[0.5:0.95],
+这种做法可以更全面地评估模型在不同IoU阈值下的性能,尤其是在一些更严格的IoU阈值下.
 
 Object detection变量非常多.若要准确度,则Faster R-CNN.若要快速:
-YOLO.但目前这一领域,工业界已经占据了统治地位.
+YOLO,但目前这一领域,工业界已经占据了统治地位.
 
 \subsection{YOLO}
 
@@ -282,8 +293,6 @@ YOLO.但目前这一领域,工业界已经占据了统治地位.
     \label{fig:DETR}
 \end{figure}
 
-
-
 \subsection{考什么}
 
 1. Transformer和Attention
@@ -306,9 +315,9 @@ Top-Down Approach:Mask R-CNN
 
 首先,经过RoI pooling之后,分辨率可能下降.但这是大家都知道的.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.3]{figures/ROI_align.png}
+    \includegraphics[scale=0.2]{figures/ROI_align.png}
     \caption{ROI align}
     \label{fig:ROI_align}
 \end{figure}
@@ -320,10 +329,28 @@ Ablation Study on RoI:
 AP75 提升比AP50高,这是因为这样的方法对于高精度影响更大.
 此外,加入align后,bounding box的表现也提升了, 这是因为RoI align后的特征更加精确.
 
-\textbf{为什么Class-Agnostic Masks更好?}
+\textbf{\\Class-Specific vs. Class-Agnostic Masks}
 
+类别特定掩码是指为每个类别预测一个单独的$m \times m$掩码.
+也就是说,对于每个候选区域(RoI),模型会为每个可能的类别生成一个掩码.
+
+类别无关掩码是指预测一个单一的$m \times m$掩码,不管类别是什么.
+然后,通过分类分支来确定该掩码属于哪个类别.
+
+Class-Specific 掩码更好,可以通过例子理解,
 猫的mask有猫的prior, 人的mask有人的prior, 因此通过预测所有类别的mask可以帮助前面的
 网络学习bounding box和分类.
+
+\textbf{\\Multinomial vs. Independent Masks}
+
+在多项式掩码中,每个像素点的类别是通过一个多项式分布来预测的.
+这通常通过一个softmax层来实现,
+softmax层会输出每个像素点属于每个类别的概率,最终的类别是概率最大的那个类别.
+类别之间的竞争可能导致某些类别被忽略,特别是在类别不平衡的情况下.
+
+在独立掩码方法中,每个类别都有一个独立的掩码,
+这些掩码通过每个像素点的sigmoid函数来预测.
+每个像素点可以同时属于多个类别,这种方法没有类别之间的竞争.
 
 \subsection{3D Object Detection and Instance Segmentaiton}
 

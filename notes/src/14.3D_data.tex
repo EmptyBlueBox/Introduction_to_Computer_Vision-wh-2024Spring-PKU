@@ -149,13 +149,13 @@ CD对于取样情况不太敏感,而EMD则比较敏感.比如同样对于Stanfor
 SDF的用处:
 
 \begin{enumerate}
-    \item \textbf{collision check:}如果一个东西跟另外一个东西的碰撞。
+    \item \textbf{collision check:}如果一个东西跟另外一个东西的碰撞.
     那么其中物体A它上面的所有点到底有没有碰到物体B呢？
-    我们就可以通过query所有点在B的物体的SDF里头它的值是多少。如果都是大于0，说明A和B没有碰撞
+    我们就可以通过query所有点在B的物体的SDF里头它的值是多少.如果都是大于0,说明A和B没有碰撞
     \item 使用神经网络把物体的几何通过SDF的方式存储下来
 \end{enumerate}
 
-\subsubsection{Mesh to SDF}
+\textbf{\\Mesh to SDF}
 
 在处理Mesh到Signed Distance Field (SDF)的转换时,首先需要一些坐标点,
 基于这些点的距离值,可以尝试开发算法来计算对应的SDF值
@@ -170,7 +170,7 @@ SDF的用处:
 这些等高线描绘了在某些区域距离先减小然后增加,其中距离最近的点附近的区域距离为零,
 利用距离为零的区域判断点是在物体的内部还是外部.
 
-\subsubsection{SDF to Mesh}
+\textbf{\\SDF to Mesh}
 
 使用 marching cube
 

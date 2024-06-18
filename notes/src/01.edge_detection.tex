@@ -28,7 +28,7 @@ Precision 和 Recall 都代表着你检测出的真正边缘所占比例,但是 
 非最大值抑制,顾名思义,就是抑制非最大值,这里的最大值指的是梯度的局部最大值.
 
 在计算出了所有点的梯度之后,会有很多像素的梯度大于设定的阈值,而我们希望最后得出的边缘像素真的看起来
-像一条线而不是一块区域,所以 NMS 的目的是为了抑制那些不是边缘的像素,只保留那些是边缘的像素。
+像一条线而不是一块区域,所以 NMS 的目的是为了抑制那些不是边缘的像素,只保留那些是边缘的像素.
 
 \begin{figure}[htbp]
     \centering
@@ -62,7 +62,7 @@ Precision 和 Recall 都代表着你检测出的真正边缘所占比例,但是 
 
 \subsection{Hysteresis Thresholding}
 
-使用高阈值 (maxVal) 开始边缘曲线,使用低阈值 (minVal) 继续它们。
+使用高阈值 (maxVal) 开始边缘曲线,使用低阈值 (minVal) 继续它们.
 
 \begin{itemize}
     \item Pixels with gradient magnitudes > maxVal should be reserved.
