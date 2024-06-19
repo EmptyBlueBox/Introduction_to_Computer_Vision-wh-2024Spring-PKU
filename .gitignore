@@ -1,11 +1,6 @@
-# tmp
-往年题
-
 # Byte-compiled / optimized / DLL files
 **/.DS_Store
 **/.vscode
-
-*.pdf
 
 cifar-10-batches-py
 experiments
@@ -28,7 +23,7 @@ shapenetcore_partanno_segmentation_benchmark_v0
 *.toc
 *.out
 *.pdf
-!/notes/CV_notes.pdf
+!resources/**/*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
