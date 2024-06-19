@@ -4,7 +4,7 @@
 
 我想可能看代码更方便理解, 这是一个非常好的网站 \href{https://nn.labml.ai/transformers/mha.html}{Multi-Headed Attention}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/seq2seq.png}
     \caption{seq2seq}
@@ -13,7 +13,7 @@
 
 这样的 c: Context vector 太小了, 无法表达所有句子的信息, 所以考虑使用一个自适应的 Context vector 表达每一个 token 的信息, 这就是 attention 的思想.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/attention.png}
     \caption{Attention}
@@ -22,7 +22,7 @@
 
 对应到 Transformer 中, Query 是 s, Cross attention 的输出就是 c.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.4\textwidth]{figures/Transformer.png}
     \caption{Transformer}
@@ -32,7 +32,7 @@
 如何把 attention 应用到图片中呢? 这和语言中的基本单元类似, 语言中的基本单元在 embedding 后已经不是一个单词了, 而是一个个 token.
 考虑把卷积之后的每个像素的所有 feature 看作 token, 然后进行类似结构即可.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/image_seq2seq.png}
     \caption{Image seq2seq}
@@ -41,7 +41,7 @@
 
 这里实际上没有使用 attention, 是经典的 seq2seq 模型, 但是可以使用 attention 来改进.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/image_attentoin.png}
     \caption{Image Attention Grad Flow}
@@ -52,7 +52,7 @@
 
 一个实现细节: 相似度使用内积还是余弦相似度?取决于有没有对作归一化
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.4\textwidth]{figures/general_atten.png}
     \caption{General Attention Layer}
@@ -61,7 +61,7 @@
 
 但是可以看到, h 依然是存在前后依赖的, 无法并行计算, 所以考虑把 h 也修改为与c类似的自适应的, 这就产生了 Self attention layer.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/paralle_q.png}
     \caption{Self attention layer}
@@ -72,7 +72,7 @@
 
 但是这样就无法区别不同位置的 Token 了, 所以需要 Positional encoding
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/pos_encoding.png}
     \caption{Positional encoding}
@@ -86,7 +86,7 @@
 为了提高多语义的能力, 可以加入 multi-head attention, 可以理解为不同的head可以学习到同一个 token 的不同意思,
 在图像中可以理解为几千维的feature代表了一个像素区域, 现在需要把这些像素区域分开计算 attention, 会比一起计算有更好的表达能力.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/image_self_atten.png}
     \caption{CNN with Self-Attention}
@@ -95,7 +95,29 @@
 
 一个例子: 图像上的自注意力机制
 
-Transformer Encoder 和 Decoder 的区别: Encoder 是完全并行化的, Decoder 是有依赖的, 所以是串行的.
+\subsection{Transformer}
+
+\textbf{\\编码器(Encoder)}
+
+并行处理:
+编码器在训练和推理时都是并行处理的.编码器的每一层都可以同时处理输入序列中的所有位置,因为它们不依赖于序列的时间步.
+
+Mask操作:
+编码器中常用的mask是\textbf{填充mask(Padding Mask)}.填充mask用于忽略输入序列中的填充标记(padding tokens),以避免它们对结果的影响.
+
+\textbf{\\解码器(Decoder)}
+
+并行处理(训练时):
+在训练时,解码器也可以并行处理所有的时间步.然而,为了确保模型只看到当前时间步之前的输出,需要使用\textbf{前向遮掩(Look-Ahead Mask)}.
+
+串行处理(推理时):
+在推理时,解码器需要逐步生成序列的每个时间步的输出,因此是串行处理的.这是因为在推理过程中,解码器只能基于已经生成的部分序列来预测下一个标记.
+
+Mask操作
+\begin{enumerate}
+    \item 填充mask(Padding Mask)：与编码器相同,用于忽略填充标记.
+    \item 前向遮掩(Look-Ahead Mask)：确保解码器在预测当前时间步时,不能看到未来的时间步.
+\end{enumerate}
 
 \subsection{Self-Supervised Learning (Pre-training)}
 
