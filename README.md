@@ -2,7 +2,7 @@
 
 This is a repo for Introduction to Computer Vision course in Peking University, 2024 Spring, by Prof. Wang He.
 
-Welcome to my website [Introduction to Computer Vision](https://lyt0112.com/posts/course/intro_to_CV)
+Welcome to my [Course Review page](https://www.lyt0112.com/blog/course)
 
 1. Slides (not available, Copyright belongs to Professor Wang He of Peking University.)
 3. Course notes (Latex)
@@ -11,4 +11,4 @@ Welcome to my website [Introduction to Computer Vision](https://lyt0112.com/post
    3. You can get a compiled `.pdf` file from `Releases` or compile it yourself
 4. Labs
 5. Cheatsheets
-   1. referenced from https://github.com/PkuCuipy/icv-assignments
+   1. Some contents are referenced from https://github.com/PkuCuipy/icv-assignments
