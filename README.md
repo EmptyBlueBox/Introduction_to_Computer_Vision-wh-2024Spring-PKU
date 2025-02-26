@@ -1,3 +1,5 @@
+# News
+Maintenance for 2025 is handled by [xujing](https://iculizhi.github.io), updating and adding notes in real time. Please visit branch **2025**.
 # Introduction to Computer Vision Repository
 
 - Course: Introduction to Computer Vision
