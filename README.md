@@ -1,3 +1,6 @@
+# News
+Notes maintenance for 2025 by [xujing](iculizhi.github.io) live updates, on branch 2025
+
 # Introduction to Computer Vision Repository
 
 - Course: Introduction to Computer Vision
