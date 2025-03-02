@@ -1,5 +1,5 @@
 # News
-Notes maintenance for 2025 by [xujing](iculizhi.github.io) live updates, on branch 2025
+Notes maintenance for 2025 by [xujing](iculizhi.github.io) live updates. Version of 2024 is in branch `2024`.
 
 # Introduction to Computer Vision Repository
 
