@@ -1,0 +1,4 @@
+\section{Condition Number}
+问题的条件数是数值分析中常见的概念,是导数的一种推广.简单来说,就是对于输入发生微小变化时,输出的变化程度的大小.如果一个问题的条件数较小,那么就称其是良置的(well conditioned),否则称为病态的(ill conditioned).
+
+考虑一个线性系统$\bd A \bm x = \bm b$,那么若$\det \bd A \ne 0$,则$\bm x = \bd{A}^{-1}\bm b$.若输入变化$\delta \bm x$,则输出变化为$\bd A \delta \bm x$.考虑相对变化之比的上界:

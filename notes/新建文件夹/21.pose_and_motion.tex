@@ -1,0 +1,120 @@
+\section{Pose and Motion}
+
+\textbf{这一章节在2024年教学中已经被删去,为了让有兴趣的读者了解,故保留}
+
+\subsection{Beyond Detection: Pose}
+
+Pose是物体刚性运动的表征.二维bbox拥有四个自由度.三维有六个.若有转动角$\theta$,则为七个.
+
+rotation包含物体的朝向信息.定义六维物体姿态(6d object pose)为3平动(translation),3转动(rotation).
+
+旋转矩阵$\bd R$满足$\bd R^\top\bd R = 1$且$\det \bd R = 1$.它属于群$\mathrm{SO(3)}$\footnote{SO的含义是Special Orthogonal,前者代表行列式为1.}.
+
+旋转矩阵只有三个自由度,但却包含九个元素,这使得神经网络难以预测.我们需要其他的表达方式.
+
+\subsection{Euler Angle}
+\begin{equation}
+    \begin{array}{l}
+        R_{x}(\alpha):=\left[\begin{array}{ccc}
+            1 & 0 & 0 \\
+            0 & \cos \alpha & -\sin \alpha \\
+            0 & \sin \alpha & \cos \alpha
+        \end{array}\right] \quad
+        R_{y}(\beta):=\left[\begin{array}{ccc}
+            \cos \beta & 0 & \sin \beta \\
+            0 & 1 & 0 \\
+            -\sin \beta & 0 & \cos \beta
+        \end{array}\right] \quad
+        R_{z}(\gamma):=\left[\begin{array}{ccc}
+            \cos \gamma & -\sin \gamma & 0 \\
+            \sin \gamma & \cos \gamma & 0 \\
+            0 & 0 & 1
+        \end{array}\right]
+    \end{array}
+\end{equation}
+
+当然,具体使用的时候,有不同的convention:比如,按照什么顺序依次旋转轴?旋转是使用变换前的轴,还是变换后的轴?
+
+但两个操作复合时,并不能简单将两个角相加.
+
+\subsection{Axis Angle}
+寻找瞬时转轴和角度,$\bm e, \theta$.得到$\bm \theta = \theta \bm e$,三个变量可以取任意值.
+
+应用Rodrigues’ rotation formula, 可以将axis-angle转变为rotation matrix:
+\begin{equation}
+    R=\bd I+(\sin \theta) \bd{K}+(1-\cos \theta) \bd{K}^{2}
+\end{equation}
+其中$\bd K = \zk{\bm e}_{\times}$.
+
+Axis Angle非常好地表示了旋转的特征,且其$\theta$是不随坐标系选取而变化的.但是它仍然存在问题:当我们获知两个AA的$\theta, \bd K$时,其复合也不能由它们简单运算得到.$\mathrm{SO(3)}$在李群,李代数当中有很漂亮的形式,以及与AA的联系.
+
+\subsection{Quaternion}
+Quaternion即四元数,表达形式是由一个实部和三个虚部组成:
+\begin{equation}
+    q = w + x \bm i + y \bm j + z \bm k.
+\end{equation}
+其中
+\begin{equation}
+    \begin{array}{c}
+        \mathbf{i} * \mathbf{i}=-1 \\
+        \mathbf{j} * \mathbf{j}=-1 \\
+        \mathbf{k} * \mathbf{k}=-1 \\
+        \mathbf{i} * \mathbf{j}=-\mathbf{j} * \mathbf{i}=\mathbf{k} \\
+        \mathbf{j} * \mathbf{k}=-\mathbf{k} * \mathbf{j}=\mathbf{i} \\
+        \mathbf{k} * \mathbf{i}=-\mathbf{i} * \mathbf{k}=\mathbf{j}
+    \end{array}
+\end{equation}
+
+运算律:
+\begin{equation}
+    \begin{aligned}
+        \mathbf{q}_{1} * \mathbf{q}_{2} &=\left(w_{1} w_{2}-x_{1} x_{2}-y_{1} y_{2}-z_{1} z_{2}\right) \\
+        &+\left(w_{1} x_{2}+x_{1} w_{2}+y_{1} z_{2}-z_{1} y_{2}\right) \mathbf{i} \\
+        &+\left(w_{1} y_{2}-x_{1} z_{2}+y_{1} w_{2}+z_{1} x_{2}\right) \mathbf{j} \\
+        &+\left(w_{1} z_{2}+x_{1} y_{2}-y_{1} x_{2}+z_{1} w_{2}\right) \mathbf{k}
+    \end{aligned}
+\end{equation}
+
+共轭:$q = w - \bm i - y \bm j - z \bm k.$性质为
+\begin{equation}
+    \|\mathbf{q}\|=\sqrt{\mathbf{q} * \mathbf{q}^{\prime}}=\sqrt{w^{2}+x^{2}+y^{2}+z^{2}}
+\end{equation}
+
+若模为1,则是单位四元数.$\bd q^{-1} = \bd q^\prime$.乘法满足结合律但不满足交换律.
+
+如何表达旋转?scalar+vector的表达方式:
+\begin{equation}
+    \bd q = (s, \bd v)
+\end{equation}
+
+得到
+\begin{equation}
+    \mathbf{q}_{1} * \mathbf{q}_{2}=\left(s_{1} s_{2}-\mathbf{v}_{1} \cdot \mathbf{v}_{2}, s_{1} \mathbf{v}_{2}+s_{2} \mathbf{v}_{1}+\mathbf{v}_{1} \times \mathbf{v}_{2}\right)
+\end{equation}
+
+一个单位四元数对应一个旋转.$s = \cos \frac{\theta}{2}, \bd v = \bm e \sin \frac{\theta}{2}$.
+
+对于一个向量$\bm x, $其运算方式为将$\bm x$补成四元数$\bd x = (0, \bm x)$,求$\bd x^\prime = \bd q \bd x \bd q^{-1}$.计算复合只需要四元数相乘.
+
+四元数实际上是一个四维空间上的超球面$S^3$.很遗憾,它也不是欧式的.
+
+How to Estimate Rotation use Neural Network?
+
+方法一: Use a neural network to regress a rotation representation.\footnote{在此祝愿助教Jiayi Chen的论文被顺利接收.}
+
+方法二: Predict object coordinate or correspondence and then solve 
+rotation.
+
+Orthogonal Procrustes Problem:
+\begin{equation}
+    \widehat{\mathbf{A}}=\underset{\mathbf{A} \in \mathbb{R}^{p \times p}}{\operatorname{argmin}}\|\mathbf{M}-\mathbf{N A}\|_{F}^{2} \quad \text { subject to } \quad \mathbf{A}^{T} \mathbf{A}=\mathbf{I},
+\end{equation}
+
+The solution can be expressed in terms of the SVD of a special matrix\footnote{这里为了保证行列式为$1$, 可以令$\widehat{\mathbf{A}}=\mathbf{U} \mathbf{\Lambda} \mathbf{U}^{T}$, 其中 $\mathbf{\Lambda} = \diag\dk{1, 1, \det \mathbf{V U}^{T}}$}.
+\begin{equation}
+    \mathbf{M}^{T} \mathbf{N}=\mathbf{U D V}^{T} \text {, then } \widehat{\mathbf{A}}=\mathbf{V U}^{T}
+\end{equation}
+
+SVD is very sensitive to outliers.For fitting rotations, we need to use RANSAC.
+
+How many pairs of 3D-3D correspondence do we need for hypothesis generation? 2 paris(如果连线不与转轴平行).

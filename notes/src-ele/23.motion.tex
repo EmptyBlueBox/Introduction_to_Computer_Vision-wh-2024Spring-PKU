@@ -1,0 +1,63 @@
+\chapter{Motion}
+
+\textbf{这一章节在2024年教学中没有讲授,为了让有兴趣的读者了解,故保留}
+
+	Today let’s focus on motions between two consecutive frames!
+	
+	Optical Flow 光流.
+	
+	图片的亮的部分在两帧之间的表象运动.
+	
+	几个假设:亮度相对稳定,小移动,一个点的运动与其邻居相似.
+	
+	\begin{equation}
+		\begin{array}{l}
+			I(x+u, y+v, t) \approx I(x, y, t-1)+I_{x} \cdot u(x, y)+I_{y} \cdot v(x, y)+I_{t} \\
+			I(x+u, y+v, t)-I(x, y, t-1)=I_{x} \cdot u(x, y)+I_{y} \cdot v(x, y)+I_{t} \\
+			\text { Hence, } I_{x} \cdot u+I_{y} \cdot v+I_{t} \approx 0 \quad \rightarrow \nabla I \cdot[u v]^{T}+I_{t}=0
+		\end{array}
+	\end{equation}
+
+	那么,这个方程足够解出所有$(u, v)$吗?我们有$n^2$个方程,但有$2n^2$个未知数,因此不够.
+	
+	The Aperture Problem.单纯从图像来看,运动可能并不完整.Barberpole Illusion.沿着线的方向不容易观测,垂直的容易被观察到.
+	
+	更多约束: Spatial coherence constraint. 1981年Lucas和Kanade提出了假设在每个pixel的5*5window当中flow相同.
+	
+	\begin{equation}
+		\left[\begin{array}{cc}
+			I_{x}\left(\mathrm{p}_{1}\right) & I_{y}\left(\mathbf{p}_{1}\right) \\
+			I_{x}\left(\mathbf{p}_{2}\right) & I_{y}\left(\mathbf{p}_{2}\right) \\
+			\vdots & \vdots \\
+			I_{x}\left(\mathbf{p}_{25}\right) & I_{y}\left(\mathbf{p}_{25}\right)
+		\end{array}\right]\left[\begin{array}{l}
+			u \\
+			v
+		\end{array}\right]=-\left[\begin{array}{c}
+			I_{t}\left(\mathbf{p}_{1}\right) \\
+			I_{t}\left(\mathbf{p}_{2}\right) \\
+			\vdots \\
+			I_{t}\left(\mathbf{p}_{25}\right)
+		\end{array}\right]
+	\end{equation}
+
+	即$\bd A_{25\times 2} \bm d_{2\times 1} = \bm b_{25\times 1}$
+	
+	得到
+	\begin{equation}
+		\bd A^\top \bd A \bm d = \bd A^\top \bm b
+	\end{equation}
+
+	什么时候可解?\marginpar{\kaishu 这和我们之前的Harris Corner Detector非常相似.光流当中最容易被捕捉的也是corner.corner与光流紧密相关.}
+	\begin{enumerate}
+		\item 可逆
+		\item 特征值不能太小
+		\item 良态
+	\end{enumerate}
+
+	FlowNet:最简单的想法:两张三通道图merge在一起,卷.dense regression.early fusion.
+	
+	或者:分别提取feature.两个网络share weight.然后结合到一起.middle fusion.
+	
+	过早fusion会使得问题空间变大.过完fusion会使得微观细节缺失.
+	

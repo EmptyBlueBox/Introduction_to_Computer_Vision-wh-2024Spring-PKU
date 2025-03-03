@@ -1,0 +1,55 @@
+\section{QR Decomposition}
+\label{QR Decomposition}
+矩阵的QR分解就是将矩阵分解为正交矩阵和上三角矩阵的乘积,它可以对任意形状的矩阵进行.常用的方法有Gram–Schmidt process, Givens rotaitons和Householder reflections等.我们用最容易理解的施密特正交化方法来推导方阵的情形.
+
+我们先将分解后的形式写出:
+\begin{equation}
+	\begin{bmatrix}
+		\bm a_1 & \bm a_2 & \cdots & \bm a_n
+	\end{bmatrix}
+	=
+	\begin{bmatrix}
+		\bm e_1 & \bm e_2 & \cdots & \bm e_n
+	\end{bmatrix}
+	\begin{bmatrix}
+		r_{11} & r_{12}  & \cdots & r_{1n}
+		\\
+		0 & r_{22} & \cdots  & r_{2n}
+		\\
+		0 & 0 & \ddots & \vdots
+		\\
+		0 & 0 & \cdots & r_{nn}
+	\end{bmatrix}
+\end{equation}
+也就是满足
+\begin{equation}
+	\bm a_i = \sum_{j = 1}^{i} r_{ji} \bm e_j
+\end{equation}
+由此可以定出
+\begin{equation}
+	\begin{aligned}
+		\bm u_1 &= \bm a_1, \quad &\bm e_1 = \frac{\bm u_1}{\norm{\bm u_1}}
+		\\
+		\bm u_2 &= \bm a_2 - \text{proj}_{\bm u_1} \bm a_2, & \bm e_2 = \frac{\bm u_2}{\norm{\bm u_2}}
+		\\
+		&\vdots 
+		\\
+		\bm u_n &= \bm a_n - \sum_{j=1}^{n-1} \text{proj}_{\bm u_j} \bm a_n , &\bm e_n = \frac{\bm u_n}{\norm{\bm u_n}}
+	\end{aligned} 
+\end{equation}
+以及
+\begin{equation}
+	r_{ij} = \langle \bm e_i, \bm a_j \rangle
+\end{equation}
+
+我们考虑一个方阵$\bd P$,其副对角线上的元素为$1$,其余为$0$.不难验证$\bd P\bd P = \bd I, \bd P = \bd P^\top = \bd P^{-1}$.左乘矩阵$\bd P$会使得矩阵上下翻转,右乘会使得矩阵左右翻转.将一个上三角矩阵上下翻转后左右翻转,即变为下三角矩阵.记$\widetilde{\bd A} = \bd P \bd A$,对$\widetilde{\bd A}^\top$进行QR分解,得到
+\begin{equation}
+	\widetilde{\bd A}^\top = \widetilde{\bd Q} \widetilde{\bd R}
+\end{equation}
+
+由此得到
+\begin{equation}
+	\bd A = \bd P \widetilde{\bd R}^\top \widetilde{\bd Q}^\top = \xk{\bd P \widetilde{\bd R}^\top \bd P} \xk{\bd P \widetilde{\bd Q}^\top} \xlongequal{\text{def}} \bd R \bd Q
+\end{equation}
+
+同样的,对于$\bd A^{\top}$进行QR分解就可以得到$\bd A$的LQ分解,可以用同样的方法得到QL分解.不过在使用时要注意:$\bd{P}$不一定是旋转矩阵.

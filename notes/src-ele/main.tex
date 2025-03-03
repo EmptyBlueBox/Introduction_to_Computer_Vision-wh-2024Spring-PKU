@@ -1,0 +1,69 @@
+\documentclass[lang=cn,10pt,green]{elegantbook}
+\include{package2.tex}
+\title{Introduction to Computer Vision Notes}
+\subtitle{授课教师：\href{https://hughw19.github.io}{王鹤}}
+\author{林晓疏, \href{https://lyt0112.com/}{梁宇桐}, \href{https://iculizhi.github.io/}{徐靖}}
+\institute{PKU EECS}
+
+\bioinfo{声明}{\textcolor{red}{请勿用于个人学习外其他用途！}}
+\extrainfo{个人笔记，如有谬误，欢迎指正！\\ 联系方式：2200012917@stu.pku.edu.cn}
+
+\setcounter{tocdepth}{3}
+
+% 自定义封面元素
+\cover{cover.jpg}
+\logo{logo-blue.png}
+
+% 本文档命令
+\usepackage{array}
+\newcommand{\ccr}[1]{\makecell{{\color{#1}\rule{1cm}{1cm}}}}
+
+% 修改标题页的橙色带
+% \definecolor{customcolor}{RGB}{32,178,170}
+% \colorlet{coverlinecolor}{customcolor}
+
+\begin{document}
+
+\maketitle
+\frontmatter
+
+\tableofcontents
+
+\mainmatter
+
+\include{00.images_as_funcitons}
+\include{01.edge_detection}
+\include{02.keypoint_detection}
+\include{03.line_fitting}
+\include{04.CNN}
+\include{05.CNN_training}
+\include{06.CNN_improvement}
+\include{07.classification}
+\include{08.CNN_for_classification}
+\include{09.segmentation}
+\include{10.3Dvision}
+\include{11.camera_carlibration}
+\include{12.single_view_geometry}
+\include{13.epipolar_geometry}
+\include{14.3D_data}
+\include{15.3D_deep_learning}
+\include{16.Sequential_Modeling}
+\include{17.video_analysis}
+\include{18.Transformer}
+\include{19.object_detection_and_instance_segmentation}
+\include{20.generative_model}
+\include{21.pose_and_motion}
+\include{22.Instance_Level_6D_Object_Pose_Estimation}
+\include{23.motion}
+\include{24.Embodied_AI}
+\include{25.Summary_of_Computer_Vision}
+\clearpage
+% appendix: appendix-QRDecomposition, condition-number, transformation-in-space
+\appendix
+\include{condition-number}
+\include{transformation-in-space}
+\include{DOF_and_rank}	
+\include{appendix-QRDecomposition}
+
+
+\end{document}

@@ -1,0 +1,132 @@
+\documentclass[a4,10pt,oneside,openany]{ctexart}
+\usepackage[utf8x]{inputenc}
+%\usepackage[UTF8]{ctex}
+%\usepackage[english]{babel}
+\usepackage{mathpazo}
+\usepackage{mathrsfs}
+\setlength{\parskip}{0.2\baselineskip}
+%\setlength{\parskip}{0.2em}
+\usepackage{url}
+\usepackage{amssymb,amsmath,amsthm,amsfonts}
+\usepackage{mathtools}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{tikz}
+\tikzset{elegant/.style={smooth,thick,samples=50,cyan}}
+\tikzset{eaxis/.style={->,>=stealth}}
+
+
+\usepackage{extarrows}
+\usepackage{subfigure}
+\usepackage{graphics}
+\usepackage{wrapfig}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{subfigure}
+\usepackage{CJKulem}%中文删除线
+\usepackage[normalem]{ulem} % \sout{想加删除线的中文}
+\usepackage{picinpar}%图片绕排,是真滴烦
+\usepackage{float}
+
+%页眉页脚
+\usepackage{authblk}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+%以下是书写伪代码用
+\usepackage{algorithm}  
+\usepackage{algpseudocode}  
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}  % Use Input in the format of Algorithm  
+\renewcommand{\algorithmicensure}{\textbf{Output:}} % Use Output in the format of Algorithm 
+
+\geometry{a4paper, left=3cm, right=3cm, bottom=3cm, top=3cm}%此行定义了纸张大小和边距,不需要可删除
+
+%以下是Inkspace
+\usepackage{import}
+\usepackage{xifthen}
+\usepackage{pdfpages}
+\usepackage{transparent}
+
+\usepackage{verbatim}%comment 环境
+%\usepackage[backref]{hyperref} %参考文献高亮跳转\\
+\usepackage[colorlinks, linkcolor=black, anchorcolor=blue, citecolor=red]{hyperref}
+
+\newcommand{\incfig}[1]{%
+\def\svgwidth{\columnwidth}
+\import{./figures/}{#1.pdf_tex}
+}
+
+\newtheorem{deff}{定义}[section]
+\newtheorem{thm}{定理}[section]
+\newtheorem{clm}[thm]{命题}
+\newtheorem{lemma}[thm]{引理}
+\newtheorem{prf}{证明}[section]
+
+
+\renewcommand{\proofname}{\indent Pr}
+\renewcommand{\qedsymbol}{$\blacksquare$}    % 证毕符号改成黑色的正方形
+
+\newcommand{\argmin}[1]{\underset{#1}{\arg \min}\ }
+\newcommand{\ceil}[1]{\left\lceil #1 \right \rceil }
+\newcommand{\norm}[1]{\left \Vert #1 \right \Vert}
+\newcommand{\tform}[1]{\left \Vert #1 \right \Vert_2}
+\newcommand{\tnorm}[1]{\left \Vert #1 \right \Vert_2}
+\newcommand{\onorm}[1]{\left \Vert #1 \right \Vert_1}
+\newcommand{\abs}[1]{\left|#1 \right|}
+\newcommand{\var}[1]{\text{Var}\left[ #1\right]}
+\newcommand{\xk}[1]{\left( #1\right)} 
+\newcommand{\zk}[1]{\left[ #1\right]} 
+\newcommand{\dk}[1]{\left\{ #1\right\}} 
+\newcommand{\bd}[1]{\bold{#1}}
+
+%量子力学符号------
+\newcommand{\xde}{\text{Schrödinger}}
+\newcommand{\avg}[1]{\left \langle #1 \right \rangle}
+\newcommand{\lvec}[1]{\left \langle #1 \right |}
+\newcommand{\rvec}[1]{\left | #1 \right \rangle}
+
+
+\newtheorem{lproof}{证明}[section]
+\newtheorem{tuilun}{推论}
+\newtheorem{eg}{例}[section]
+\newtheorem{solve}{解}[section]
+\newcommand\ii{\textup{i}}
+\newcommand\dd{\mathrm{d}}
+
+
+%自定义数学符号
+\newcommand{\diag}{\textup{diag}}
+\newcommand{\Frobenius}[1]{\left\Vert #1 \right\Vert}
+\newcommand{\fform}[1]{\left\Vert #1 \right\Vert_F}
+\newcommand{\parr}[2]{\frac{\partial #1}{\partial #2}}%一阶偏微分
+\newcommand{\parrr}[2]{\frac{\partial^2 #1}{\partial #2^2}}%二阶偏微分
+\newcommand{\lap}[1]{\parrr{#1}{x} + \parrr{#1}{y} = 0}%二元拉普拉斯方程
+\newcommand{\ddd}[2]{\frac{\textup{d} #1}{\textup{d} #2}}%微商
+\newcommand{\dddd}[2]{\frac{\textup{d}^2 #1}{\textup{d} #2^2}}%微商
+
+%二重以上环路积分,强迫症了属于是
+\def\ooint{{\bigcirc}\kern-11.5pt{\int}\kern-6.5pt{\int}}
+\def\oooint{{\bigcirc}\kern-12.3pt{\int}\kern-7pt{\int}\kern-7pt{\int}}
+
+
+\newcommand{\tu}{\textup}
+\newcommand{\bm}{\boldsymbol}
+\newcommand{\ol}[1]{$\overline{#1}$}
+\newcommand{\re}[1]{\textup{Re}(#1)}
+\newcommand{\im}[1]{\textup{Im}(#1)}
+\newcommand{\fa}{\forall}
+\newcommand{\ex}{\exists}
+\newcommand{\st}{\textup{  s.t. }}
+\newcommand{\ve}{\varepsilon}
+\newcommand{\disp}{\displaystyle}
+\newcommand{\chj}{\textup{Cauchy}积分公式}
+\newcommand{\res}[1]{\textup{Res}\left(#1\right)}
+\newcommand{\mysum}[1][n]{\sum_{i = 1}^{#1}}%求和
+\newcommand{\series}[1]{\sum_{n = 0}^{\infty} #1_{n}}%级数
+\newcommand{\seriesa}[1]{\sum_{n = 0}^{\infty} \left| #1_{n}\right|}%绝对级数
+\newcommand{\fseries}[1]{\sum_{k = 1}^{\infty} #1_k (z)}
+
+\newcommand*{\num}{pi}
+
+%书写横线
+\newcommand{\horrule}[1]{\rule[0.5ex]{\linewidth}{#1}} 	% Horizontal rule
