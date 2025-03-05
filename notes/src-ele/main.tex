@@ -1,10 +1,11 @@
 \documentclass[lang=cn,10pt,green]{elegantbook}
 \include{package2.tex}
+
 \title{Introduction to Computer Vision Notes}
 \subtitle{授课教师：\href{https://hughw19.github.io}{王鹤}}
 \author{林晓疏, \href{https://lyt0112.com/}{梁宇桐}, \href{https://iculizhi.github.io/}{徐靖}}
 \institute{PKU EECS}
-
+\version{2025 Spring}
 \bioinfo{声明}{\textcolor{red}{请勿用于个人学习外其他用途！}}
 \extrainfo{个人笔记，如有谬误，欢迎指正！\\ 联系方式：2200012917@stu.pku.edu.cn}
 
@@ -21,7 +22,7 @@
 % 修改标题页的橙色带
 % \definecolor{customcolor}{RGB}{32,178,170}
 % \colorlet{coverlinecolor}{customcolor}
-
+\setcounter{tocdepth}{3} % 设置目录深度
 \begin{document}
 
 \maketitle
@@ -65,5 +66,5 @@
 \include{DOF_and_rank}	
 \include{appendix-QRDecomposition}
 
-
+\printbibliography[heading=bibintoc, title=\ebibname]
 \end{document}

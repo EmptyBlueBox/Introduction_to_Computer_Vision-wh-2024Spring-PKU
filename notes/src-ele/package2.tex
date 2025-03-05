@@ -1,13 +1,16 @@
 \usepackage{float}
-\usepackage{subfigure}
 \usepackage[normalem]{ulem} % \sout{想加删除线的中文}
 \usepackage{wrapfig}
+\makeatletter
+\let\c@lofdepth\relax  % 重置 lofdepth 计数器
+\let\c@lotdepth\relax  % 重置 lotdepth 计数器
+\makeatother
+\usepackage{subfigure}
 \usepackage{extarrows}
 \newcommand{\incfig}[1]{%
 \def\svgwidth{\columnwidth}
 \import{./figures/}{#1.pdf_tex}
 }
-
 
 
 \renewcommand{\proofname}{\indent Pr}

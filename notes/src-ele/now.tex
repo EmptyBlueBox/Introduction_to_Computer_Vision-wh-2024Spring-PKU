@@ -1,111 +1,105 @@
-\include{package}
+\documentclass[lang=cn,10pt,green]{elegantbook}
+\include{package2.tex}
 
-% 文档标题
-\title{
-{\normalfont\normalsize\textsc{
-Peking University\\
-Introduction to Computer Vision, Spring 2024 \\[25pt]}}
-\horrule{0.5pt}\\
-\sffamily{Introduction to Computer Vision\\Course Notes}\\
-\horrule{1.8pt}\\[20pt]
-}
+\title{Introduction to Computer Vision Notes}
+\subtitle{授课教师：\href{https://hughw19.github.io}{王鹤}}
+\author{林晓疏, \href{https://lyt0112.com/}{梁宇桐}, \href{https://iculizhi.github.io/}{徐靖}}
+\institute{PKU EECS}
+\version{2025 Spring}
+\bioinfo{声明}{\textcolor{red}{请勿用于个人学习外其他用途！}}
+\extrainfo{个人笔记，如有谬误，欢迎指正！\\ 联系方式：2200012917@stu.pku.edu.cn}
 
-% 作者和联系方式
-\author[1]{Prof. He Wang\thanks{\href{https://hughw19.github.io/}{Prof. He Wang}}}
-\author[2]{林晓疏\thanks{wangyuanqing@pku.edu.cn}}
-\author[2]{Yutong Liang\thanks{\href{https://lyt0112.com/}{Yutong Liang's Website}}}
-\affil[1]{主讲教师}
-\affil[2]{笔记整理}
+\setcounter{tocdepth}{3}
 
-% 文档日期
-\date{\today}
+% 自定义封面元素
+\cover{cover.jpg}
+\logo{logo-blue.png}
 
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[L]{\leftmark}  % 在页眉左侧显示章节名
-\fancyfoot[C]{\thepage}  % 在页脚中间显示页码
+% 本文档命令
+\usepackage{array}
+\newcommand{\ccr}[1]{\makecell{{\color{#1}\rule{1cm}{1cm}}}}
 
+% 修改标题页的橙色带
+% \definecolor{customcolor}{RGB}{32,178,170}
+% \colorlet{coverlinecolor}{customcolor}
+\setcounter{tocdepth}{3} % 设置目录深度
 \begin{document}
 
+\maketitle
+\frontmatter
 
-\subparagraph{Edge Detection}
- 
-\subparagraph{What is an Edge?}
+\tableofcontents
 
-“边缘”是图像中的一个区域,在这个区域中,沿着图像的一个方向,
-像素强度值 (或者说对比度) 发生了“显著”的变化,而在其正交方向上,
-像素强度值 (或对比度) 几乎没有变化.
+\mainmatter
 
-\subparagraph{Criteria for Optimal Edge Detection}
+\chapter{Line Fitting}
 
-\begin{equation}
-\text{Accuracy}=\frac{\text{TP}+\text{TN}}{\text{TP}+\text{FP}+\text{TN}+\text{FN}} 
-\end{equation}
-
-\begin{equation}
-\text{Precision}=\frac{\text{TP}}{\text{TP}+\text{FP}} 
-\end{equation}
-
-\begin{equation}
-\text{Recall}=\frac{\text{TP}}{\text{TP}+\text{FN}}
-\end{equation}
-
-Precision 和 Recall 都代表着你检测出的真正边缘所占比例,但是 Precision 的分母
-是你检测出的边缘,Recall 的分母是真正的边缘.
-
-\subparagraph{Non-Maximal Suppression (NMS)}
-
-非最大值抑制,顾名思义,就是抑制非最大值,这里的最大值指的是梯度的局部最大值.
-
-在计算出了所有点的梯度之后,会有很多像素的梯度大于设定的阈值,而我们希望最后得出的边缘像素真的看起来
-像一条线而不是一块区域,所以 NMS 的目的是为了抑制那些不是边缘的像素,只保留那些是边缘的像素.
+\section{Least Square Method}
 
 \begin{figure}[htbp]
     \centering
-	\includegraphics[scale=0.2]{figures/NMS.png}
-	\caption{NMS示意图}
+    \includegraphics[width=0.8\textwidth]{figures/not_roboust_outliner.png}
+    \caption{Least Square Method is not robust to outliers}
 \end{figure}
 
-对于一个边缘像素的候选点,我们认为它是边缘当:它比它梯度方向的两个点 $q+\nabla q$ 和 $q-\nabla q$ 的梯度值大,
-也就是这个点的梯度大小是局部最大值的时候.
+对细微噪声鲁棒(robust), 但是对于离群点(Ouliers)敏感.
+
+\section{RANSAC}
+
+RANSAC:RANdom SAmple Consensus
+
+Idea: we need to ﬁnd a line that has the largest supporters (or inliers)
+
+RANSAC loop:
+
+假设这个直线 (平面) 需要两个 (n个) 点来确定.
+
+\begin{enumerate}
+    \item 随机选择 k 组能确定这个直线的点,也就是在所有点里面选出一个 $k\times 2$ 的矩阵
+    \item 对每一组点计算出一条直线
+    \item 对每一组点的直线计算出所有点到这条直线的距离,如果小于阈值,则认为这个点是这条直线的 inlier
+    \item 找到最大的 inlier 数量的直线,如果大于阈值,则认为这条直线是最优的
+    \item 对这个最优的直线,用这个直线所有的 inlier 重新计算一次直线
+\end{enumerate}
+
+\section{RANSAC calculation}
+
+假设我们有所有 inliner 占比为 $w$ 的先验知识,同时希望有不低于 $p$ 的概率能够找到一个最优的直线,那么我们需要多少次迭代呢?
+
+\begin{equation}
+\mathbf{\Pr}\text{[一组点全部是inliner]} = w^n
+\end{equation}
+
+如果一组点中有一个点是 outliner,那么我们称这组点 fail.
+
+\begin{equation}
+\mathbf{\Pr}\text{[k组点全部fail]} = {(1-w^n)}^k
+\end{equation}
+
+我们希望 k 组点全部 fail 的概率小于 $1-p$.
+
+\begin{equation}
+{(1-w^{n})}^k < 1-p
+\Rightarrow
+k > \frac{\log(1-p)}{\log(1-w^n)}
+\end{equation}
+
+\section{Hough Transform}
+
+其实就是把一条直线从实际空间的表示转换到参数空间的表示.但是如果存在垂直的直线,可能需要考虑使用极坐标来作为参数空间.
 
 \begin{figure}[htbp]
     \centering
-	\includegraphics[scale=0.4]{figures/bilinear.png}
-	\caption{双线性插值}
+    \includegraphics[width=0.8\textwidth]{figures/hough1.png}
+    \caption{Hough Transform w/o Noise}
 \end{figure}
-
-计算这个点梯度方向的点的梯度值可以使用双线性插值法,就是把这个点周围的四个点的梯度按照横纵距离反比加权.
-
-当然,NMS 是一个思想而不是针对边缘检测的算法,比如对于 keypoint detection,object detection (like YOLO) 都可以使用 NMS,
-实现的思路都很类似,使用一个打分函数看这个备选点 (bounding box) 是不是比跟它相邻 (冲突) 的点 (bounding box) 好,如果是就保留,否则就抑制.
-
-\subparagraph{A Simplified Version of NMS}
 
 \begin{figure}[htbp]
     \centering
-	\includegraphics[scale=0.55]{figures/simple_NMS.png}
-	\caption{简化版本的双线性插值}
+    \includegraphics[width=0.8\textwidth]{figures/hough2.png}
+    \caption{Hough Transform w/ Noise and Outliers}
 \end{figure}
 
-一个 NMS 的简化版本是把双线性插值省去,直接让这个像素的梯度大于它梯度方向的那两个相邻像素的梯度.
 
-\subparagraph{Hysteresis Thresholding}
-
-使用高阈值 (maxVal) 开始边缘曲线,使用低阈值 (minVal) 继续它们.
-
-\begin{itemize}
-    \item Pixels with gradient magnitudes > maxVal should be reserved.
-    \item Pixels with gradient magnitudes < minVal should be removed.
-\end{itemize}
-
-How to decide maxVal and minVal? Examples:
-
-\begin{itemize}
-    \item maxVal = 0.3 $\times$ average magnitude of the pixels that pass NMS
-    \item minVal = 0.1 $\times$ average magnitude of the pixels that pass NMS
-\end{itemize}
-
-
-
+\printbibliography[heading=bibintoc, title=\ebibname]
 \end{document}

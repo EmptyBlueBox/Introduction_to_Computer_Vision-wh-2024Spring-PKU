@@ -1,5 +1,6 @@
 # News
-Notes maintenance for 2025 by [xujing](iculizhi.github.io) live updates. Version of 2024 is in branch `2024`.
+Notes maintenance for 2025 by [Jing Xu](iculizhi.github.io) live updates. Version of 2024 is in branch `2024`.
+- latest notes are in `notes/src-ele`, this is because I  refactored the previous code into the elegantbook template, so that some nice looking components can be used later.
 
 # Introduction to Computer Vision Repository
 
