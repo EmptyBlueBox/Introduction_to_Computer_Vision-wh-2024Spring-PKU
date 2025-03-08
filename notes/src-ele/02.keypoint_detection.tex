@@ -1,5 +1,4 @@
 \chapter{Keypoint Detection}
-(Corner Detection)
 
 \begin{introduction}[Keywords]
     \item 角点检测 Corner Detection
@@ -11,9 +10,7 @@
     \item 高斯差分 Difference-of-Gaussians (DoG)
 \end{introduction}
 
-\begin{problem}
-    What Points are Keypoints?
-\end{problem}
+\section{What Points are Keypoints?}
 
 \begin{enumerate}
     \item Repeatability: 可以在不同的图像中找到相同的点
@@ -23,46 +20,185 @@
 \end{enumerate}
 Corners 就是这样的 keypoints.
 
-
-
-
 \section{The Basic Idea of Harris Corner}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/window_moving.png}
-    \caption{移动窗口}    
+    \caption{移动窗口}
 \end{figure}
 
-Move a window and explore intensity changes within the window.
+移动一个窗口, 探索窗口内的强度变化.
 
-Corner : significant change in all directions.
+\begin{itemize}
+    \item \textbf{平坦区域(Flat region)}: 强度变化很小或几乎没有变化.
+    \item \textbf{边缘(Edge)}: 在边缘方向垂直的方向上有显著变化,但沿着边缘方向变化较小.
+    \item \textbf{角点(Corner)}: 在所有方向上的强度变化都很显著.
+\end{itemize}
 
 \section{Harris Corner}
 
-一个 window,给定它的移动方向 $(u,v)$:
+我们首先定义强度差异函数 $D_{u,v}(x, y)$,表示对某一像素点在位移 $(u, v)$ 处的变化敏感性:
+
+$$
+D_{u,v}(x, y) = \left[I(x + u, y + v) - I(x, y)\right]^2
+$$
+
+其中,$I(x, y)$ 是图像在像素点 $(x, y)$ 的强度值(回忆第一章 Image as a function),$u, v$ 是图像在像素点水平和垂直方向上的位移.
+
+然后,我们定义窗口函数 $w(x, y)$,用于限制计算范围到局部区域:
+
+\begin{equation}
+    w(x, y) =
+    \begin{cases}
+        1, & \text{if } -b < x, y < b \\
+        0, & \text{else}
+    \end{cases}
+\end{equation}
+
+注意到这个函数是一个 \textbf{对称函数}.
+
+继续定义窗口函数的平移版本,其中心位于 $(x_0, y_0)$:
+
+\begin{equation}
+    w'_{x_0, y_0}(x, y) = w(x - x_0, y - y_0)
+\end{equation}
+
+根据以上定义,我们可以开始推导误差函数.
+
+\begin{equation}
+\begin{aligned}
+E_{x_0, y_0}(u, v) &= \sum_{(x, y) \in N} D_{u,v}(x, y) \\
+&= \sum_{(x, y) \in N} \left[I(x + u, y + v) - I(x, y)\right]^2 \\
+&= \sum_{x, y} w'_{x_0, y_0}(x, y) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
+&= \sum_{x, y} w(x - x_0, y - y_0) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
+&= \sum_{x, y} w(x_0 - x, y_0 - y) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
+&= w * D_{u,v}
+\end{aligned}
+\end{equation}
+
+倒数第二个等号利用了窗口函数的对称性.
+
+\vspace{1em}
+
+接下来我们推导 \textbf{Harris Detector}.
+
+当 $u, v$ 很小(即位移较小时),对 $I(x + u, y + v)$ 做一阶泰勒展开:
+
+\begin{equation}
+    I(x + u, y + v) \approx I(x, y) + I_x \cdot u + I_y \cdot v
+\end{equation}
+
+其中:
+\begin{itemize}
+    \item $I_x = \frac{\partial I}{\partial x}$:图像在 $x$ 方向的梯度.
+    \item $I_y = \frac{\partial I}{\partial y}$:图像在 $y$ 方向的梯度.
+\end{itemize}
+
+代入平方强度差公式:
+
+\begin{equation}
+    D_{u,v}(x, y) = \left[I(x + u, y + v) - I(x, y)\right]^2
+    \approx \left(I_x \cdot u + I_y \cdot v\right)^2
+\end{equation}
+
+将其写成矩阵形式:
+
+\begin{equation}
+    D_{u,v}(x, y) =
+    \begin{bmatrix}
+        u & v
+    \end{bmatrix}
+    \begin{bmatrix}
+        I_x^2 & I_x I_y \\
+        I_x I_y & I_y^2
+    \end{bmatrix}
+    \begin{bmatrix}
+        u \\
+        v
+    \end{bmatrix}
+\end{equation}
+
+将上述结果代入误差函数:
 
 \begin{equation}
     \begin{aligned}
-    E(u,v) &= \sum_{x,y} w(x,y) [I(x+u,y+v) - I(x,y)]^2\\
-    &\approx \sum_{x,y} w(x,y) [I(x,y) + uI_x + vI_y - I(x,y)]^2\\
-    &= \sum_{x,y} w(x,y) [uI_x + vI_y]^2\\
+    E_{x_0, y_0}(u, v) 
+    &= \sum_{x, y} w(x - x_0, y - y_0) \cdot D_{u,v}(x, y) \\
+    &= w * D_{u,v}\\
+    \end{aligned}
+\end{equation}
+
+利用卷积的性质:
+
+\begin{equation}
+    \begin{aligned}
+    E(u,v)
+    &= w * D_{u,v}\\
     &= w \ast \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} I_x^2 & I_xI_y \\ I_xI_y & I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
+    &= \begin{bmatrix}
+        u & v
+        \end{bmatrix}
+        \left[
+        w *
+        \begin{bmatrix}
+        I_x^2 & I_x I_y \\
+        I_x I_y & I_y^2
+        \end{bmatrix}
+        \right]
+        \begin{bmatrix}
+        u \\
+        v
+        \end{bmatrix}
+    \end{aligned}
+\end{equation}
+
+注意这里,每个 $I_x, I_y$ 都是一张 \textbf{图像},假设你原图 $I$ 是 $N \times N$ 的,那么
+
+$$
+\begin{bmatrix}
+    I_x^2 & I_x I_y \\
+    I_x I_y & I_y^2
+\end{bmatrix}
+$$
+
+是 $2N \times 2N$ 的,我们这样实际上是写成了分块矩阵的形式.
+
+而这个东西经过 $w$ 卷积之后,就会得到一个 $2 \times 2$ 的矩阵.
+
+\begin{equation}
+    \begin{aligned}
+    E(u,v)
     &= \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} w \ast I_x^2 & w \ast I_xI_y \\ w \ast I_xI_y & w \ast I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
     &= \begin{bmatrix} u & v \end{bmatrix} R^{-1} \begin{bmatrix} \lambda_1 & 0\\ 0 & \lambda_2 \end{bmatrix} R \begin{bmatrix} u \\ v \end{bmatrix}\\
     &= \lambda_1 u_R^2 + \lambda_2 v_R^2
     \end{aligned}
 \end{equation}
 
-根据这两个特征值的大小可以判断这个点是不是角点.
+这里利用了对称矩阵可以进行对角化的性质. $R$ 是一个正交矩阵.
+
+所以,最后这里我们判断能量函数大不大，就归结为了判断 
+
+\begin{equation}
+    M = \left[
+        w *
+        \begin{bmatrix}
+        I_x^2 & I_x I_y \\
+        I_x I_y & I_y^2
+        \end{bmatrix}
+    \right]
+\end{equation}
+
+的特征值大不大. 也即根据这两个特征值的大小可以判断这个点是不是角点.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.6\textwidth]{figures/corner_map.png}
     \caption{特征值大小和这个点的是什么种类的点的关系}
 \end{figure}
+
+\newpage
 \begin{proposition}
-    
 
 这个点是角点一般需要满足:
 
@@ -71,13 +207,13 @@ Corner : significant change in all directions.
     \item $\frac{1}{k}<\frac{\lambda_1}{\lambda_2}<k$
 \end{itemize}
 
-一个快速的判断公式:
+一个快速的判断公式,引入两个超参 $\alpha$ 和 $t$:
 
 \begin{equation}
 \begin{aligned}
 \theta&=\frac 12(\lambda_1\lambda_2-\alpha(\lambda_1+\lambda_2)^2)+\frac12(\lambda_1\lambda_2-2t)\\
 &=\lambda_1\lambda_2-\alpha(\lambda_1+\lambda_2)^2-t\\
-&=\det(R)-\alpha\text{Trace}(R)^2-t
+&=\det(M)-\alpha\text{Trace}(M)^2-t
 \end{aligned}
 \end{equation}
 
@@ -86,9 +222,17 @@ Corner : significant change in all directions.
 如果 $\theta$ 大于阈值, 则认为这个点是角点.
 \end{proposition}
 \begin{note}
-Harris Corner 对平移和图像旋转是 equivariant的,对规模不是 equivariant 的.
+Harris Corner 对平移和 90° 倍数旋转是具有等变性(equivariant)的,对非 90° 倍数旋转以及图片缩放不是等变的.
 
-为实现 rotation invariance, 可以用 Gaussian filter 来平滑图像, 使得角点不会因为旋转而改变.
+为实现完全的 rotation invariance, 可以用 Gaussian filter 来平滑图像, 从而引入其各向同性, 使得角点不会因为旋转而改变.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/window-function.png}
+    \caption{窗口函数}
+\end{figure}
+
+
 \end{note}
 \section{equivariant V.S. invariant}
 \begin{definition}
