@@ -3,7 +3,7 @@
 
 \title{Introduction to Computer Vision Notes}
 \subtitle{授课教师：\href{https://hughw19.github.io}{王鹤}}
-\author{林晓疏, \href{https://lyt0112.com/}{梁宇桐}, \href{https://iculizhi.github.io/}{徐靖}}
+\author{林晓疏, \href{https://lyt0112.com/}{梁宇桐}, \href{https://iculizhi.github.io/}{徐靖},\href{https://arthals.ink/}{卓致用}}
 \institute{PKU EECS}
 \version{2025 Spring}
 \bioinfo{声明}{\textcolor{red}{请勿用于个人学习外其他用途！}}
@@ -20,255 +20,208 @@
 \newcommand{\ccr}[1]{\makecell{{\color{#1}\rule{1cm}{1cm}}}}
 
 % 修改标题页的橙色带
-% \definecolor{customcolor}{RGB}{32,178,170}
-% \colorlet{coverlinecolor}{customcolor}
+\definecolor{customcolor}{RGB}{214, 136, 0}
+\colorlet{coverlinecolor}{customcolor}
 \setcounter{tocdepth}{3} % 设置目录深度
 \begin{document}
 
 \maketitle
 \frontmatter
 
-% \tableofcontents
+\tableofcontents
 
 \mainmatter
 
-\chapter{Line Fitting}
-
-\begin{introduction}[Keywords]
-    \item 最小二乘法 Least Square Method
-    \item 奇异值分解 Singular Value Decomposition (SVD)
-    \item 随机抽样一致算法 RANdom SAmple Consensus (RANSAC)
-    \item 霍夫变换 Hough Transform
-    \item 鲁棒性 Robustness
-    \item 离群点 Outliers
-    \item 内点 Inliers
+\chapter{Deep learning 1}
+\begin{introduction}[keywords]
+    \item Feature extraction : 特征提取
+    \item Logistic Regression : 逻辑回归
+    \item Heuristic model : 启发式模型
+    \item Maximum Likelihood Estimation : 最大似然估计
+    \item Stochastic Gradient Descent : 随机梯度下降
+    \item Multilayer Perceptron : 多层感知机
+    \item Dense layer : 全连接层
 \end{introduction}
+\section{Feature Description}
 
-\section{Least Square Method}
+\begin{problem}
+    我们已经知道了如何去 detect 一些点, 下一步如何通过描述他们进行匹配呢?
+\end{problem}
 
-最小二乘法想必都熟知
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/not_roboust_outliner.png}
-    \caption{Least Square Method is not robust to outliers}
-\end{figure}
-
-对细微噪声\textbf{鲁棒(robust)}, 但是对于\textbf{离群点(Ouliers)}敏感.
-
-\href{http://faculty.bicmr.pku.edu.cn/~wenzw/bigdata/matrix-cook-book.pdf}{Matrix Cookbook} : 记录了很多矩阵求导的公式
-
-\section{Singular Value Decomposition (SVD)}
-
-SVD 这里的作用在于, 对给定一组数据点, 找到最适配的 k 维子空间, 使得所有数据点到这个子空间的距离最小. 这里我认为王鹤老师讲解地不够本质, 但 SVD 本身非常基础, 可以自行查阅资料.
-
-\newpage
-\section{RANSAC}
-
-
-RANSAC : RANdom SAmple Consensus
-
-Idea: we need to ﬁnd a line that has the largest supporters (or inliers)
-
-\begin{definition}[RANSAC loop]
-    假设这个直线 (平面) 需要两个 (n个) 点来确定 : 
-
-    \begin{enumerate}
-        \item 随机选择 k 组能确定这个直线的点,也就是在所有点里面选出一个 $k\times 2$ 的矩阵
-        \item 对每一组点计算出一条直线 (SVD)
-        \item 对每一组点的直线计算出所有点到这条直线的距离,如果小于阈值,则认为这个点是这条直线的 inlier
-        \item 找到最大的 inlier 数量的直线,如果大于阈值,则认为这条直线是最优的
-        \item 对这个最优的直线,用这个直线所有的 inlier 重新计算一次直线
-        \item 重复上述步骤, 直到 inlier 数量不再增加
-    \end{enumerate}
-    
-\end{definition}
+    将图像内容转换为不受平移、旋转、缩放和其他成像参数影响的局部特征坐标. 例如, 房子的地点, 大小, 风格, 建造时间, 当前状况等. 基于这些 features, 我们有:
+    \begin{itemize}
+        \item Heuristic model (启发式模型): $y = (10-\text{location})\times \text{area}$
+        \item Parametric model (参数模型): $y = \phi_\theta(F)$
+    \end{itemize}
 \begin{note}
-    实际上从今天来看这个 loop 不需要, 因为我们可以并行地提出所有假设 (Hypothesis), 这里王鹤老师留作作业.
+拥有一些 observations 后, 我们就可以 fit $\theta$.
 \end{note}
 
-\section{RANSAC calculation}
-\begin{problem}
-假设我们有所有 inliner 占比为 $w$ 的先验知识,同时希望有不低于 $p$ 的概率能够找到一个最优的直线,那么我们需要多少次迭代呢?
-\end{problem}
-\begin{proof}
-注意到, 
-\begin{equation}
-\mathbf{\Pr}\text{[一组点全部是inliner]} = w^n
-\end{equation}
+\section{Machine learning}
 
-如果一组点中有一个点是 outliner,那么我们称这组点 fail.
-
-\begin{equation}
-\mathbf{\Pr}\text{[k组点全部fail]} = {(1-w^n)}^k
-\end{equation}
-
-我们希望 k 组点全部 fail 的概率小于 $1-p$.
-
-\begin{equation}
-{(1-w^{n})}^k < 1-p
-\Rightarrow
-k > \frac{\log(1-p)}{\log(1-w^n)}
-\end{equation}
-\end{proof}
-
-\newpage
-\section{Hough Transform}
-
-其实就是把一条直线从实际空间的表示转换到参数空间的表示. 但是如果存在垂直的直线, 可能需要考虑使用极坐标来作为参数空间.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/hough1.png}
-    \caption{Hough Transform w/o Noise}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/hough2.png}
-    \caption{Hough Transform w/ Noise and Outliers}
-\end{figure}
-
-
-
-
-\chapter{Keypoint Detection}
-(Corner Detection)
-
-\begin{introduction}[Keywords]
-    \item 角点检测 Corner Detection
-    \item 结构张量 Structure Tensor
-    \item 特征值分解 Eigenvalue Decomposition
-    \item 等变性 Equivariance
-    \item 尺度不变性 Scale Invariance
-    \item Harris-Laplacian 检测器
-    \item 高斯差分 Difference-of-Gaussians (DoG)
-\end{introduction}
-
-\begin{problem}
-    What Points are Keypoints?
-\end{problem}
-
-\begin{enumerate}
-    \item Repeatability: 可以在不同的图像中找到相同的点
-    \item Saliency: 有趣的点
-    \item Quantity: 量大管饱
-    \item Accurate localization: 精确定位
-\end{enumerate}
-Corners 就是这样的 keypoints.
-
-
-
-
-\section{The Basic Idea of Harris Corner}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/window_moving.png}
-    \caption{移动窗口}    
-\end{figure}
-
-Move a window and explore intensity changes within the window.
-
-Corner : significant change in all directions.
-
-\section{Harris Corner}
-
-一个 window,给定它的移动方向 $(u,v)$:
-
-\begin{equation}
-    \begin{aligned}
-    E(u,v) &= \sum_{x,y} w(x,y) [I(x+u,y+v) - I(x,y)]^2\\
-    &\approx \sum_{x,y} w(x,y) [I(x,y) + uI_x + vI_y - I(x,y)]^2\\
-    &= \sum_{x,y} w(x,y) [uI_x + vI_y]^2\\
-    &= w \ast \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} I_x^2 & I_xI_y \\ I_xI_y & I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
-    &= \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} w \ast I_x^2 & w \ast I_xI_y \\ w \ast I_xI_y & w \ast I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
-    &= \begin{bmatrix} u & v \end{bmatrix} R^{-1} \begin{bmatrix} \lambda_1 & 0\\ 0 & \lambda_2 \end{bmatrix} R \begin{bmatrix} u \\ v \end{bmatrix}\\
-    &= \lambda_1 u_R^2 + \lambda_2 v_R^2
-    \end{aligned}
-\end{equation}
-
-根据这两个特征值的大小可以判断这个点是不是角点.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/corner_map.png}
-    \caption{特征值大小和这个点的是什么种类的点的关系}
-\end{figure}
-\begin{proposition}
-    
-
-这个点是角点一般需要满足:
-
+当我们有了一组 observations $\{(x_i, y_i)\}_{i=1}^N$, 我们希望找到 $y$ 和 $x$ 的关系.
 \begin{itemize}
-    \item $\lambda_1, \lambda_2>b$
-    \item $\frac{1}{k}<\frac{\lambda_1}{\lambda_2}<k$
+    \item Line fitting: 我们知道这个关系近似为线性关系, 所以用 $y = mx + b$ 来拟合.
+    \item Training neural network: 我们用参数模型来拟合, 但是我们对其所知甚少.
+\end{itemize}
+\begin{definition}[Outline]
+    \begin{itemize}
+        \item Set up the task
+        \item Perpare the data $\to$ Need a labeled dataset
+        \item Build a model $\to$ Construct your neural network
+        \item Decide the fitting/training objective $\to$ Loss function
+        \item Perform fitting $\to$ Training by running optimization
+        \item Testing $\to$ Evaluating on test data
+    \end{itemize}
+\end{definition}
+
+\subsection{Task}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/ministdataset.png}
+    \caption{pipeline}
+    \label{fig:ml-pipeline}
+\end{figure}
+
+\clearpage
+
+\subsection{Data}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/Mnistdataset.png}
+    \caption{MINIST Dataset}
+    \label{fig:ml-dataset}
+\end{figure}
+
+\subsection{Model}
+我们使用所谓逻辑回归 (Logistic Regression) 来进行分类, 其模型为:
+$$h(x) = g(\theta^T x) = \frac{1}{1 + e^{-\theta^T x}}$$
+\begin{note}
+    这里的 $g$ 是 sigmoid 函数 $g(z) = \frac{1}{1 + e^{-z}}$, 将 $z\in \mathbb{R}$ 映射到 $[0, 1]$, 提供非线性性.
+\end{note}
+\subsection{Loss function}
+\begin{definition}[最大似然估计]
+    \begin{itemize}
+        \item 即最大化似然函数, 使得在假定的统计模型下, 观察到的数据是最有可能的.
+        \item 参数空间中最大化似然函数的点 (实际上是网络权重) 称为最大似然估计.
+    \end{itemize}
+\end{definition}
+回到原任务, 我们有:
+$$ p(y|x, \theta) = h_{\theta}(x)^y (1 - h_{\theta}(x))^{1-y} $$
+\begin{note}
+    这里 y 取值为 0 或 1, x 是 28x28 的图像, $\theta$ 是我们要学习的参数
+\end{note}
+自然地假设所有数据点独立同分布, 因此我们有:
+$$ p(Y|X, \theta) = \prod_{i=1}^N p(y_i|x_i, \theta) = \prod_{i=1}^N h_{\theta}(x_i)^{y_i} (1 - h_{\theta}(x_i))^{1-y_i} $$
+
+Loss 就是我们想去最小化的东西, 这里可以有所谓 Negative Log Likelihood (NLL) loss :
+$$ \mathcal{L}({\theta}) = -\log p(Y|X, \theta) = -\sum_{i=1}^N \left( y_i \log h_{\theta}(x_i) + (1 - y_i) \log (1 - h_{\theta}(x_i)) \right) $$
+\clearpage
+\subsection{Training : Gradient Descent}
+此时我们可以去定义一个优化问题, 但通用的优化问题是困难的, 有一些问题类型可以被有效地解决, 例如:
+\begin{itemize}
+    \item Convex optimization: 目标函数是一个凸函数, 约束条件是一个凸集.
+    \item Linear programming: 目标函数是线性的, 约束条件是线性的.
+    \item Least squares: 目标函数是二次函数, 约束条件是线性的.
+\end{itemize}
+如果我们将参数空间放到横轴, Loss 放到纵轴, 我们可以自然地得到一个曲面 (这是Loss具备的数学性质), 对于曲面自然存在凸性的局部或者整体:
+
+% 将loss1.png和loss2.png左右排布放在一起, 高度对齐
+
+\begin{figure}[htbp] 
+        \centering
+        \begin{minipage}[b]{0.45\linewidth}
+            \centering
+            \includegraphics[width=\textwidth]{figures/loss1.png}
+            \caption{Non-convex energy landscape}
+            \label{fig:loss1}
+        \end{minipage}
+        \hfill
+        \begin{minipage}[b]{0.3\linewidth}
+            \centering
+            \includegraphics[width=\textwidth]{figures/loss2.png}
+            \caption{minima}
+            \label{fig:loss2}
+        \end{minipage}
+\end{figure}
+
+\begin{definition}[Gradient Descent]
+    \begin{itemize}
+        \item 每次迭代的公式 :
+        $$\theta_{t+1} = \theta_t - \alpha \nabla_{\theta} \mathcal{L}(\theta_t)$$
+        \item 其中 $\alpha$ 是学习率, $\nabla_{\theta} \mathcal{L}(\theta_t)$ 是 Loss 的梯度.
+    \end{itemize}
+\end{definition}
+
+\begin{note}
+而对于我们的 NLL loss, 注意到 sigmoid 函数有 $g'(z) = g(z)(1-g(z))$, 我们可以得到 :
+$$\begin{aligned}\frac{\partial\mathcal{L}}{\partial\theta_{j}}&=-\sum\left(y\frac1{g(\theta^Tx)}-(1-y)\frac1{1-g(\theta^Tx)}\right)\frac\partial{\partial\theta_j}g(\theta^Tx)\\&=-\sum\left(y\frac1{g(\theta^Tx)}-(1-y)\frac1{1-g(\theta^Tx)}\right)g(\theta^Tx)(1-g(\theta^Tx))\frac\partial{\partial\theta_j}\theta^Tx\\&=-\sum\left(y(1-g(\theta^Tx))-(1-y)g(\theta^Tx)\right)x_j\\&=-\sum\left(y-h_\theta(x)\right)x_j\end{aligned}
+$$
+\end{note}
+\begin{theorem}[Stochastic Gradient Descent]
+    所谓的 Batch Gradient Descent 是指每次迭代都使用所有的训练数据来计算梯度, 但是这样会非常慢, 因此我们可以使用 Stochastic Gradient Descent (SGD), 每次迭代只使用随机出的 N 对样本. 此时令:
+    $$\nabla_{\theta} \mathcal{L}(\theta_t) = \frac{1}{N}\sum_{i=1}^N \nabla_{\theta} \mathcal{L}(\theta_t, x_i, y_i)$$
+    此外, SGD 有助于跳出 local minima, 但是会导致 loss 函数震荡.
+\end{theorem}
+
+\subsection{Testing}
+训练后, 我们需要测试泛化性, 也就是模型在未见过的数据上的表现.
+
+\section{Multilayer Perceptron\footnote{MLP 是非常经典且优美的神经网络, 笔者做生成式模型, 能看到即便在当前很前沿的研究中, 也会用到 MLP, 例如著名的 Nerf 方法}}
+\begin{note}
+    单层网络解决不了线性不可分的问题, 因此我们需要 MLP. 
+\end{note}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/mlp.png}
+    \caption{MLP 前向过程示例}
+    \label{fig:mlp}
+\end{figure}
+$$ f(x; \theta) = g(W_2 g(W_1 x + b_1) + b_2) $$
+
+
+\subsection{Chain Rule}
+\begin{problem}
+    如何训练 MLP? 如何获取梯度?
+\end{problem}
+使用矩阵计算链式法则的结果解决这个问题, 得到每个参数 $W_i, b_i$ 的梯度, 那就可以更新参数了. 我们判断一个网络是否可以更新, 一个直观的标准就是看他的前向过程是否可微可导. 即便实际操作未必参与计算. 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/chainrule.png}
+    \caption{链式法则求梯度}
+    \label{fig:chainrule}
+\end{figure}
+
+\subsection{Activation function}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/activationfunc.png}
+    \caption{常用激活函数}
+    \label{fig:chainrule}
+\end{figure}
+
+\begin{note}
+激活函数替代我们的 $g$, 其中 ReLU 通常是大部分问题的默认选择
+\end{note}
+
+\begin{definition}[Fully connected layer]
+    \begin{itemize}
+        \item 每个神经元都和前一层的每个神经元相连, 也叫做 Dense layer.
+    \end{itemize}
+\end{definition}
+
+\subsection{Problems of MLP}
+视觉信号过程中, MLP 可能会遇到一些问题:
+\begin{itemize}
+    \item 计算量大, 将高分辨率图像向量化非常耗时.
+    \item 扁平化操作会破坏图像的局部结构.
 \end{itemize}
 
-一个快速的判断公式:
-
-\begin{equation}
-\begin{aligned}
-\theta&=\frac 12(\lambda_1\lambda_2-\alpha(\lambda_1+\lambda_2)^2)+\frac12(\lambda_1\lambda_2-2t)\\
-&=\lambda_1\lambda_2-\alpha(\lambda_1+\lambda_2)^2-t\\
-&=\det(R)-\alpha\text{Trace}(R)^2-t
-\end{aligned}
-\end{equation}
-
-其中 $\alpha\in[0.04,0.06], t\in[0.01,0.03]$.
-
-如果 $\theta$ 大于阈值, 则认为这个点是角点.
-\end{proposition}
-\begin{note}
-Harris Corner 对平移和图像旋转是 equivariant的,对规模不是 equivariant 的.
-
-为实现 rotation invariance, 可以用 Gaussian filter 来平滑图像, 使得角点不会因为旋转而改变.
-\end{note}
-\section{equivariant V.S. invariant}
-\begin{definition}
-    
-
-\textbf{等变 (equivariant)}: $F(TX)=T(F(x))$,对于translation和rotation是等变的.
-
-\textbf{不变 (invariant)}: $F(T(X))=F(X)$,也就是对于不同位置导出的角点还是那样,所以其实我们想要的是等变,也就是对于不同位置导出的角点做了同样的变化.
-\end{definition}
-
-\begin{problem}
-    How to prove Harris detector is equivariant?
-\end{problem}
-
-
-只要说明角点检测函数也是equivariant即可.
-
-角点检测函数包括了求导和卷积两个操作,显然求导是equivariant的,因为导数会随着trans和rot做相同的变化.
-
-很有趣的是卷积也是equivariant的:当你的filter function是各向同性的,那么这个卷积就是equivariant的;但是如果是一个椭圆形的window,那这个卷积就不是equivariant的了.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/light_invariant.png}
-    \caption{Illumination invariant}
-\end{figure}
-\begin{remark}
-    这个高光说明不是环境 Illumination Invariant的
-\end{remark}
-
-
-\begin{problem}
-    How to do NMS with corner-response-function?
-\end{problem}
-
-
-一个简单的想法:
-
-先给出一个阈值,把所有response排序,成为一个list,从上到下按顺序把这个pixel周围的大于阈值的踢出list.
-这个跟之前的NMS区别在于之前需要一条边,现在只需要一个点,那么现在比之前踢出的像素点更多.
-
-\section{Scale Invariant Detectors}
-
-这个不讲了?下次看看
-
-Harris-Laplacian, SIFT (Lowe)
+\clearpage
+% appendix: appendix-QRDecomposition, condition-number, transformation-in-space
 
 \printbibliography[heading=bibintoc, title=\ebibname]
 \end{document}
