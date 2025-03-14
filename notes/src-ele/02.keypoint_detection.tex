@@ -64,20 +64,18 @@ $$
     w'_{x_0, y_0}(x, y) = w(x - x_0, y - y_0)
 \end{equation}
 
-根据以上定义,我们可以开始推导误差函数.
+根据以上定义,我们可以开始推导 $E_{x_0, y_0}(u, v)$, 它的含义是对于以 $(x_0, y_0)$ 为中心, 长宽为 $2b$ 的窗口内所有像素点 $(x, y)$, 在位移 $(u, v)$ 作用下的强度变化 $D_{u,v}(x, y)$ 的总和.
 
 \begin{equation}
 \begin{aligned}
 E_{x_0, y_0}(u, v) &= \sum_{(x, y) \in N} D_{u,v}(x, y) \\
 &= \sum_{(x, y) \in N} \left[I(x + u, y + v) - I(x, y)\right]^2 \\
 &= \sum_{x, y} w'_{x_0, y_0}(x, y) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
-&= \sum_{x, y} w(x - x_0, y - y_0) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
-&= \sum_{x, y} w(x_0 - x, y_0 - y) \cdot \left[I(x + u, y + v) - I(x, y)\right]^2 \\
-&= w * D_{u,v}
+&= w'_{x_0, y_0} * D_{u,v}
 \end{aligned}
 \end{equation}
 
-倒数第二个等号利用了窗口函数的对称性.
+其中 $N$ 是窗口内所有像素点的集合.
 
 \vspace{1em}
 
@@ -122,25 +120,21 @@ E_{x_0, y_0}(u, v) &= \sum_{(x, y) \in N} D_{u,v}(x, y) \\
 将上述结果代入误差函数:
 
 \begin{equation}
-    \begin{aligned}
-    E_{x_0, y_0}(u, v) 
-    &= \sum_{x, y} w(x - x_0, y - y_0) \cdot D_{u,v}(x, y) \\
-    &= w * D_{u,v}\\
-    \end{aligned}
+    E_{x_0, y_0}(u, v) = w'_{x_0, y_0} * D_{u,v}
 \end{equation}
 
-利用卷积的性质:
+从现在开始，我们省略 $w'_{x_0, y_0}$ 为 $w'$ 来简化表达, 利用卷积的性质:
 
 \begin{equation}
     \begin{aligned}
     E(u,v)
-    &= w * D_{u,v}\\
-    &= w \ast \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} I_x^2 & I_xI_y \\ I_xI_y & I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
+    &= w' * D_{u,v}\\
+    &= w' \ast \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} I_x^2 & I_xI_y \\ I_xI_y & I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
     &= \begin{bmatrix}
         u & v
         \end{bmatrix}
         \left[
-        w *
+        w' *
         \begin{bmatrix}
         I_x^2 & I_x I_y \\
         I_x I_y & I_y^2
@@ -162,26 +156,36 @@ $$
 \end{bmatrix}
 $$
 
-是 $2N \times 2N$ 的,我们这样实际上是写成了分块矩阵的形式.
+是 $2N \times 2N$ 的,我们这样实际上是写成了分块矩阵的形式. 注意这里 $I_x^2, I_y^2, I_xI_y$ 都是逐点相乘而非矩阵乘法.
 
-而这个东西经过 $w$ 卷积之后,就会得到一个 $2 \times 2$ 的矩阵.
+如果你对矩阵卷积有所疑惑, 那么作为举例, 一张 $N \times N$ 的图像 $I_x^2$, 和 $w'$ 卷积的过程可以展开为如下求和：
+
+\begin{equation}
+    w' * I_x^2 = \sum_{x, y} w'(x, y) \cdot I_x^2(x, y)
+\end{equation}
+
+所以原式中间部分,经过 $w'$ 卷积之后,就会得到一个 $2 \times 2$ 的矩阵.
 
 \begin{equation}
     \begin{aligned}
     E(u,v)
-    &= \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} w \ast I_x^2 & w \ast I_xI_y \\ w \ast I_xI_y & w \ast I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
+    &= \begin{bmatrix} u & v \end{bmatrix} \begin{bmatrix} w' \ast I_x^2 & w' \ast I_xI_y \\ w' \ast I_xI_y & w' \ast I_y^2 \end{bmatrix} \begin{bmatrix} u \\ v \end{bmatrix}\\
     &= \begin{bmatrix} u & v \end{bmatrix} R^{-1} \begin{bmatrix} \lambda_1 & 0\\ 0 & \lambda_2 \end{bmatrix} R \begin{bmatrix} u \\ v \end{bmatrix}\\
     &= \lambda_1 u_R^2 + \lambda_2 v_R^2
     \end{aligned}
 \end{equation}
 
-这里利用了对称矩阵可以进行对角化的性质. $R$ 是一个正交矩阵.
+这里利用了对称矩阵可以进行对角化的性质. $R$ 是一个正交矩阵, 且:
+
+\begin{equation}
+    \begin{bmatrix} u_R \\ v_R \end{bmatrix} =  R \begin{bmatrix} u \\ v \end{bmatrix}
+\end{equation}
 
 所以,最后这里我们判断能量函数大不大，就归结为了判断 
 
 \begin{equation}
     M = \left[
-        w *
+        w' *
         \begin{bmatrix}
         I_x^2 & I_x I_y \\
         I_x I_y & I_y^2
@@ -198,16 +202,23 @@ $$
 \end{figure}
 
 \newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/corner_energy.png}
+    \caption{特征值大小和能量函数的关系}
+\end{figure}
+
 \begin{proposition}
 
 这个点是角点一般需要满足:
 
 \begin{itemize}
-    \item $\lambda_1, \lambda_2>b$
-    \item $\frac{1}{k}<\frac{\lambda_1}{\lambda_2}<k$
+    \item $\lambda_1, \lambda_2>b$: 特征值都大于一个阈值 $b$
+    \item $\frac{1}{k}<\frac{\lambda_1}{\lambda_2}<k$: 特征值的比值在 $1/k$ 和 $k$ 之间，确保比例相差不大, 否则可能是一个边缘.
 \end{itemize}
 
-一个快速的判断公式,引入两个超参 $\alpha$ 和 $t$:
+一个快速的判断公式,引入两个超参 $\alpha$ (用以加权上述两个限制)和 $t$(阈值):
 
 \begin{equation}
 \begin{aligned}
@@ -219,10 +230,11 @@ $$
 
 其中 $\alpha\in[0.04,0.06], t\in[0.01,0.03]$.
 
-如果 $\theta$ 大于阈值, 则认为这个点是角点.
+如果 $\theta$ 大于 0, 也即 $\det(M)-\alpha\text{Trace}(M)^2>t$, 则认为这个点是角点.
 \end{proposition}
+
 \begin{note}
-Harris Corner 对平移和 90° 倍数旋转是具有等变性(equivariant)的,对非 90° 倍数旋转以及图片缩放不是等变的.
+基于现在所述窗口函数的 Harris Corner 对平移和 90° 倍数旋转是具有等变性(equivariant)的,对非 90° 倍数旋转以及图片缩放不是等变的.
 
 为实现完全的 rotation invariance, 可以用 Gaussian filter 来平滑图像, 从而引入其各向同性, 使得角点不会因为旋转而改变.
 

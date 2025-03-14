@@ -105,6 +105,8 @@ Precision 和 Recall 都代表着你检测出的真正边缘所占比例,但是 
 
 考虑如何连接起来被通过 NMS 的 edge 连成一条 edge(edge linking).
 
+\textbf{写作业的时候千万注意这里的 $y$ 轴是竖直向下的, 不要搞反了.}
+
 这里有一个 trick,使用高阈值 (maxVal) 开始边缘曲线,只要 edge 没有低于 minVal,就继续.而一旦低于 minVal,就停止.
 
 \begin{itemize}
